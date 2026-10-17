@@ -1,6 +1,0 @@
-class TesteErro {
-    function void main() {
-        let x = 10;
-        return;
-    }
-}

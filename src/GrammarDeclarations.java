@@ -126,6 +126,110 @@ public class GrammarDeclarations {
         // Processa o corpo da sub-rotina.
         compileSubroutineBody();
     }
+    
+    // Compila a lista de parâmetros de uma sub-rotina.
+    public void compileParameterList() {
+        // Verifica se a lista de parâmetros está vazia.
+        if (checkSymbol(")")) {
+            return;
+        }
+
+        // Processa o primeiro parâmetro.
+        consumeType();
+        consume(TokenType.IDENTIFIER);
+
+        // Processa os parâmetros adicionais, se houver.
+        while (checkSymbol(",")) {
+            advance();
+
+            consumeType();
+            consume(TokenType.IDENTIFIER);
+        }
+    }
+
+    // Compila o corpo de uma sub-rotina, incluindo declarações de variáveis locais e instruções.
+    public void compileSubroutineBody() {
+        // Reconhece o símbolo de abertura do corpo da sub-rotina.
+        consumeSymbol("{");
+
+        // Processa as declarações de variáveis locais da sub-rotina.
+        while (checkKeyword("var")) {
+            compileVarDec();
+        }
+
+        // Até que a análise de instruções seja implementada, rejeita tokens inesperados.
+        if (!checkSymbol("}")) {
+            throw syntaxError(
+                "Unexpected token in subroutine body. "
+                + "Statement parsing may not be implemented yet."
+            );
+        }
+
+        // Reconhece o símbolo de fechamento do corpo da sub-rotina.
+        consumeSymbol("}");
+    }
+
+    // Compila uma declaração de variável local, incluindo o tipo e os nomes das variáveis.
+    public void compileVarDec() {
+        // Reconhece a palavra-chave 'var'.
+        consumeKeyword("var");
+
+        // Reconhece o tipo da variável.
+        consumeType();
+
+        // Lê o nome da primeira variável.
+        consume(TokenType.IDENTIFIER);
+
+        // Lê os nomes das variáveis adicionais, se houver.
+        while (checkSymbol(",")) {
+            advance();
+            consume(TokenType.IDENTIFIER);
+        }
+
+        // Reconhece o ponto e vírgula no final da declaração.
+        consumeSymbol(";");
+    }
+
+    // Verifica se o token atual é uma palavra-chave específica e a consome.
+    public void consumeKeyword(String expected) {
+        Token token = peek();
+
+        if (token == null || token.getType() != TokenType.KEYWORD || !token.getValue().equals(expected)) {
+            throw syntaxError("Expected keyword: " + expected);
+        }
+
+        advance();
+    }
+
+    // Verifica se o token atual é um símbolo específico e o consome.
+    public void consumeSymbol(String expected) {
+        Token token = peek();
+
+        if (token == null || token.getType() != TokenType.SYMBOL || !token.getValue().equals(expected)) {
+            throw syntaxError("Expected symbol: " + expected);
+        }
+
+        advance();
+    }
+
+    // Verifica a palavra-chave atual sem consumi-la.
+    public boolean checkKeyword(String expected) {
+        Token token = peek();
+        return token != null && token.getType() == TokenType.KEYWORD && token.getValue().equals(expected);
+    }
+
+    // Verifica o símbolo atual sem consumi-lo.
+    public boolean checkSymbol(String expected) {
+        Token token = peek();
+        return token != null && token.getType() == TokenType.SYMBOL && token.getValue().equals(expected);
+    }
+
+    // Gera uma exceção de erro de sintaxe com uma mensagem detalhada.
+    private RuntimeException syntaxError(String message) {
+        Token token = peek();
+        String tokenInfo = (token != null) ? " at token '" + token.getValue() + "'" : " at end of input";
+        return new RuntimeException("Syntax error" + tokenInfo + ": " + message);
+    }
 
     // Verifica se todos os tokens foram consumidos.
     public boolean isAtEnd() {

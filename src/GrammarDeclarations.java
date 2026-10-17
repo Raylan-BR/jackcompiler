@@ -25,7 +25,7 @@ public class GrammarDeclarations {
 
         // Precessa as declarações de variáveis da classe
         while (checkKeyword("static") || checkKeyword("field")) {
-            compile_class_var_dec();
+            compileClassVarDec();
         }
 
         // Processa as declarações de sub-rotinas da classe
@@ -42,6 +42,50 @@ public class GrammarDeclarations {
         if (!isAtEnd()) {
             throw syntaxError("Tokens restantes após o fechamento da classe.");
         }
+    }
+    
+    public void compileClassVarDec() {
+        // Reconhece a palavra-chave 'static' ou 'field'.
+        if (!checkKeyword("static") && !checkKeyword("field")) {
+            throw syntaxError("Expected 'static' or 'field'.");
+        }
+
+        advance();
+
+        // Reconhece o tipo da variável.
+        consumeType();
+
+        // Lê o nome da primeira variável.
+        consume(TokenType.IDENTIFIER);
+
+        // Lê os nomes das variáveis adicionais, se houver.
+        while (checkSymbol(",")) {
+            advance();
+            consume(TokenType.IDENTIFIER);
+        }
+
+        // Reconhece o ponto e vírgula no final da declaração.
+        consumeSymbol(";");
+    }
+
+    private Token consumeType() {
+        Token token = peek();
+
+        if (token == null) {
+            throw syntaxError("Expected a type.");
+        }
+
+        if (checkKeyword("int")
+                || checkKeyword("char")
+                || checkKeyword("boolean")) {
+            return advance();
+        }
+
+        if (token.getType() == TokenType.IDENTIFIER) {
+            return advance();
+        }
+
+        throw syntaxError("Expected int, char, boolean, or a type identifier.");
     }
 
     // Verifica se todos os tokens foram consumidos.

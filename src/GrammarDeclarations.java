@@ -13,6 +13,7 @@ public class GrammarDeclarations {
         this.parser = parser;
     }
 
+    // Compila uma declaração de classe, incluindo variáveis e sub-rotinas.
     public void compileClass() {
         // Reconhece a palavra-chave 'class'
         consumeKeyword("class");
@@ -44,6 +45,7 @@ public class GrammarDeclarations {
         }
     }
     
+    // Consome a palavra -chave esperada, caso contrário, lança umerro de sintaxe.
     public void compileClassVarDec() {
         // Reconhece a palavra-chave 'static' ou 'field'.
         if (!checkKeyword("static") && !checkKeyword("field")) {
@@ -68,6 +70,7 @@ public class GrammarDeclarations {
         consumeSymbol(";");
     }
 
+    // Verifica se o token atual é do tipo esperado e o consome.
     private Token consumeType() {
         Token token = peek();
 
@@ -86,6 +89,42 @@ public class GrammarDeclarations {
         }
 
         throw syntaxError("Expected int, char, boolean, or a type identifier.");
+    }
+    
+    // Verifica se o token atual é uma palavra-chave específica.
+    public void compileSubroutine() {
+        // Verifica se o token atual é uma palavra-chave de sub-rotina válida.
+        if (!checkKeyword("constructor")
+                && !checkKeyword("function")
+                && !checkKeyword("method")) {
+            throw syntaxError(
+                "Expected 'constructor', 'function', or 'method'."
+            );
+        }
+
+        advance();
+
+        // Verifica se o tipo de retorno é 'void' ou um tipo válido.
+        if (checkKeyword("void")) {
+            advance();
+        } else {
+            consumeType();
+        }
+
+        // Lê o nome da sub-rotina.
+        consume(TokenType.IDENTIFIER);
+
+        // Reconhece o símbolo de abertura do parâmetro da sub-rotina.
+        consumeSymbol("(");
+
+        // Processa a lista de parâmetros da sub-rotina.
+        compileParameterList();
+
+        // Reconhece o parêntese de fechamento.
+        consumeSymbol(")");
+
+        // Processa o corpo da sub-rotina.
+        compileSubroutineBody();
     }
 
     // Verifica se todos os tokens foram consumidos.

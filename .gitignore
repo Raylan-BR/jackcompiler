@@ -29,3 +29,7 @@ replay_pid*
 # Fold of compiled class
 out
 test/actual
+target
+.vscode
+bin
+.github

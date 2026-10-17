@@ -1,75 +1,157 @@
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 public class GrammarDeclarationsTest {
 
-    public static void main(String[] args) {
+    private Token token(TokenType type, String value) {
+        return new Token(type, value, 1, 1);
+    }
 
-        List<Token> tokens = List.of(
-            new Token(TokenType.KEYWORD, "class", 0, 0),
-            new Token(TokenType.IDENTIFIER, "Main", 0, 0)
+    private GrammarDeclarations createGrammar(Token... tokens) {
+        Parser parser = new Parser(List.of(tokens));
+        return new GrammarDeclarations(parser);
+    }
+
+    @Test
+    void shouldAcceptEmptyClass() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "class"),
+            token(TokenType.IDENTIFIER, "Main"),
+            token(TokenType.SYMBOL, "{"),
+            token(TokenType.SYMBOL, "}")
         );
 
-        Parser parser = new Parser(tokens);
-        GrammarDeclarations grammar = new GrammarDeclarations(parser);
+        assertDoesNotThrow(grammar::compile_class);
+        assertTrue(grammar.isAtEnd());
+    }
 
-        // Teste 1: consulta o primeiro token.
-        if (!grammar.peek().getValue().equals("class")) {
-            throw new AssertionError(
-                "Falha ao consultar o token atual."
-            );
-        }
+    @Test
+    void shouldRejectClassWithoutClassKeyword() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.IDENTIFIER, "Main"),
+            token(TokenType.SYMBOL, "{"),
+            token(TokenType.SYMBOL, "}")
+        );
 
-        System.out.println("PASSOU: consulta do token atual");
+        assertThrows(
+            RuntimeException.class,
+            grammar::compile_class
+        );
+    }
 
-        // Teste 2: consome o primeiro token.
-        Token primeiro = grammar.advance();
+    @Test
+    void shouldAcceptFieldDeclaration() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "field"),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.IDENTIFIER, "x"),
+            token(TokenType.SYMBOL, ";")
+        );
 
-        if (!primeiro.getValue().equals("class")) {
-            throw new AssertionError(
-                "Falha ao consumir o primeiro token."
-            );
-        }
+        assertDoesNotThrow(grammar::compile_class_var_dec);
+        assertTrue(grammar.isAtEnd());
+    }
 
-        // Confirma que o próximo token é Main.
-        if (!grammar.peek().getValue().equals("Main")) {
-            throw new AssertionError(
-                "Falha ao avançar para o próximo token."
-            );
-        }
+    @Test
+    void shouldAcceptCommaSeparatedVariables() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "static"),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.IDENTIFIER, "x"),
+            token(TokenType.SYMBOL, ","),
+            token(TokenType.IDENTIFIER, "y"),
+            token(TokenType.SYMBOL, ";")
+        );
 
-        System.out.println("PASSOU: avanço entre tokens");
+        assertDoesNotThrow(grammar::compile_class_var_dec);
+        assertTrue(grammar.isAtEnd());
+    }
 
-        // Teste 3: consome o token esperado.
-        Token segundo = grammar.consume(TokenType.IDENTIFIER);
+    @Test
+    void shouldRejectDeclarationWithoutVariableName() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "field"),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.SYMBOL, ";")
+        );
 
-        if (!segundo.getValue().equals("Main")) {
-            throw new AssertionError(
-                "Falha ao consumir o identificador."
-            );
-        }
+        assertThrows(
+            RuntimeException.class,
+            grammar::compile_class_var_dec
+        );
+    }
 
-        if (!grammar.isAtEnd()) {
-            throw new AssertionError(
-                "O parser deveria estar no fim dos tokens."
-            );
-        }
+    @Test
+    void shouldAcceptFunctionWithoutParameters() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "function"),
+            token(TokenType.KEYWORD, "void"),
+            token(TokenType.IDENTIFIER, "reset"),
+            token(TokenType.SYMBOL, "("),
+            token(TokenType.SYMBOL, ")"),
+            token(TokenType.SYMBOL, "{"),
+            token(TokenType.SYMBOL, "}")
+        );
 
-        System.out.println("PASSOU: consumo e fim dos tokens");
+        assertDoesNotThrow(grammar::compile_subroutine);
+        assertTrue(grammar.isAtEnd());
+    }
 
-        // Teste 4: tentativa de consumir além do fim.
-        try {
-            grammar.consume(TokenType.KEYWORD);
+    @Test
+    void shouldAcceptMethodWithParameters() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "method"),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.IDENTIFIER, "sum"),
+            token(TokenType.SYMBOL, "("),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.IDENTIFIER, "a"),
+            token(TokenType.SYMBOL, ","),
+            token(TokenType.KEYWORD, "int"),
+            token(TokenType.IDENTIFIER, "b"),
+            token(TokenType.SYMBOL, ")"),
+            token(TokenType.SYMBOL, "{"),
+            token(TokenType.SYMBOL, "}")
+        );
 
-            throw new AssertionError(
-                "Era esperado um erro de sintaxe."
-            );
+        assertDoesNotThrow(grammar::compile_subroutine);
+        assertTrue(grammar.isAtEnd());
+    }
 
-        } catch (RuntimeException e) {
-            System.out.println(
-                "PASSOU: tratamento de fim inesperado"
-            );
-        }
+    @Test
+    void shouldRejectSubroutineWithoutName() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "function"),
+            token(TokenType.KEYWORD, "void"),
+            token(TokenType.SYMBOL, "("),
+            token(TokenType.SYMBOL, ")"),
+            token(TokenType.SYMBOL, "{"),
+            token(TokenType.SYMBOL, "}")
+        );
 
-        System.out.println("Todos os testes passaram!");
+        assertThrows(
+            RuntimeException.class,
+            grammar::compile_subroutine
+        );
+    }
+
+    @Test
+    void shouldRejectSubroutineWithoutClosingBodyBrace() {
+        GrammarDeclarations grammar = createGrammar(
+            token(TokenType.KEYWORD, "function"),
+            token(TokenType.KEYWORD, "void"),
+            token(TokenType.IDENTIFIER, "reset"),
+            token(TokenType.SYMBOL, "("),
+            token(TokenType.SYMBOL, ")"),
+            token(TokenType.SYMBOL, "{")
+        );
+
+        assertThrows(
+            RuntimeException.class,
+            grammar::compile_subroutine
+        );
     }
 }

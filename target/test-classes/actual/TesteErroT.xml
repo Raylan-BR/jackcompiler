@@ -1,0 +1,20 @@
+<tokens>
+<keyword> class </keyword>
+<identifier> TesteErro </identifier>
+<symbol> { </symbol>
+<keyword> function </keyword>
+<keyword> void </keyword>
+<identifier> main </identifier>
+<symbol> ( </symbol>
+<symbol> ) </symbol>
+<symbol> { </symbol>
+<keyword> let </keyword>
+<identifier> x </identifier>
+<symbol> = </symbol>
+<integerConstant> 10 </integerConstant>
+<symbol> ; </symbol>
+<keyword> return </keyword>
+<symbol> ; </symbol>
+<symbol> } </symbol>
+<symbol> } </symbol>
+</tokens>

@@ -22,7 +22,7 @@ public class LexerTest {
         testStringConstants();
         testInvalidInteger();
         testUnterminatedString();
-        
+
         // Testes de comentários e espaços em branco
         testWhitespace();
         testLineComments();
@@ -52,7 +52,7 @@ public class LexerTest {
     }
 
     private static void testSymbols() {
-        String[] symbols = {"{", "}", "(", ")", ";", "="};
+        String[] symbols = { "{", "}", "(", ")", ";", "=" };
 
         for (String symbol : symbols) {
             assertSingleToken(symbol, TokenType.SYMBOL, symbol);
@@ -88,69 +88,56 @@ public class LexerTest {
         System.out.println("PASSOU: rejeição de string não terminada");
     }
 
-    
     private static void testWhitespace() {
         String input = "class \t Main\r\n { \n }";
 
         assertTokenSequence(
-            input,
-            "class", "Main", "{", "}"
-        );
+                input,
+                "class", "Main", "{", "}");
 
         System.out.println("PASSOU: espaços em branco");
     }
 
-    
-    
     private static void testLineComments() {
-        String input =
-            "class Main { // comentário de linha\n" +
-            "function void main() { return; } // outro comentário";
+        String input = "class Main { // comentário de linha\n" +
+                "function void main() { return; } // outro comentário";
 
         assertTokenSequence(
-            input,
-            "class", "Main", "{",
-            "function", "void", "main", "(",
-            ")", "{", "return", ";", "}"
-        );
+                input,
+                "class", "Main", "{",
+                "function", "void", "main", "(",
+                ")", "{", "return", ";", "}");
 
         System.out.println("PASSOU: comentários de linha");
     }
 
-    
     private static void testBlockComments() {
-        String input =
-            "class /* comentário */ Main { }";
+        String input = "class /* comentário */ Main { }";
 
         assertTokenSequence(
-            input,
-            "class", "Main", "{", "}"
-        );
+                input,
+                "class", "Main", "{", "}");
 
         System.out.println("PASSOU: comentários de bloco");
     }
 
-    
     private static void testMultilineComments() {
-        String input =
-            "class Main {\n" +
-            "/* comentário\n" +
-            "   em várias linhas\n" +
-            "*/\n" +
-            "function void main() { return; }\n" +
-            "}";
+        String input = "class Main {\n" +
+                "/* comentário\n" +
+                "   em várias linhas\n" +
+                "*/\n" +
+                "function void main() { return; }\n" +
+                "}";
 
         assertTokenSequence(
-            input,
-            "class", "Main", "{",
-            "function", "void", "main", "(",
-            ")", "{", "return", ";", "}", "}"
-        );
+                input,
+                "class", "Main", "{",
+                "function", "void", "main", "(",
+                ")", "{", "return", ";", "}", "}");
 
         System.out.println("PASSOU: comentários multilinha");
     }
 
-    
     private static void testUnterminatedBlockComment() {
         assertInvalidInput("class Main { /* comentário sem fechamento");
 
@@ -159,79 +146,63 @@ public class LexerTest {
 
     private static void testOfficialFiles() {
         String[][] files = {
-            {"Main.jack", "MainT.xml"},
-            {"Square.jack", "SquareT.xml"},
-            {"SquareGame.jack", "SquareGameT.xml"}
+                { "Main.jack", "MainT.xml" },
+                { "Square.jack", "SquareT.xml" },
+                { "SquareGame.jack", "SquareGameT.xml" }
         };
 
         for (String[] pair : files) {
             Path sourcePath = Path.of(
-                "test", "fixtures", pair[0]
-            );
+                    "test", "fixtures", pair[0]);
 
             Path expectedPath = Path.of(
-                "test", "expected", pair[1]
-            );
-
-            System.out.println("Diretório atual: " +
-                System.getProperty("user.dir"));
-
-            System.out.println("XML esperado: " +
-                expectedPath.toAbsolutePath());
-
-            System.out.println("Arquivo existe? " +
-                Files.exists(expectedPath));
+                    "test", "expected", pair[1]);
 
             try {
                 String input = Files.readString(sourcePath);
+
                 Lexer lexer = new Lexer(input);
                 List<Token> actualTokens = lexer.tokenize();
 
                 assertMatchesExpectedXml(
-                    actualTokens,
-                    expectedPath,
-                    pair[0]
-                );
+                        actualTokens,
+                        expectedPath,
+                        pair[0]);
 
                 System.out.println(
-                    "PASSOU: " + pair[0]
-                    + " — " + actualTokens.size() + " tokens conferidos"
-                );
+                        "PASSOU: " + pair[0]
+                                + " — " + actualTokens.size()
+                                + " tokens conferidos");
 
             } catch (IOException e) {
                 throw new RuntimeException(
-                    "Erro ao ler os arquivos de teste: " + pair[0],
-                    e
-                );
+                        "Erro ao ler os arquivos de teste: " + pair[0],
+                        e);
             }
         }
     }
 
-    
     private static void assertMatchesExpectedXml(
             List<Token> actualTokens,
             Path expectedPath,
             String sourceName) throws IOException {
 
         try {
-            DocumentBuilderFactory factory =
-                DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
             factory.setFeature(
-                "http://apache.org/xml/features/disallow-doctype-decl",
-                true
-            );
+                    "http://apache.org/xml/features/disallow-doctype-decl",
+                    true);
 
             Document document = factory
-                .newDocumentBuilder()
-                .parse(expectedPath.toFile());
+                    .newDocumentBuilder()
+                    .parse(expectedPath.toFile());
 
             Element root = document.getDocumentElement();
 
             if (!root.getTagName().equals("tokens")) {
                 throw new AssertionError(
-                    "XML de referência inválido: " + expectedPath
-                );
+                        "XML de referência inválido: " + expectedPath);
             }
 
             List<String> expectedTypes = new ArrayList<>();
@@ -254,11 +225,10 @@ public class LexerTest {
 
             if (actualTokens.size() != expectedTypes.size()) {
                 throw new AssertionError(
-                    sourceName
-                    + ": quantidade de tokens diferente. Esperado: "
-                    + expectedTypes.size()
-                    + ", recebido: " + actualTokens.size()
-                );
+                        sourceName
+                                + ": quantidade de tokens diferente. Esperado: "
+                                + expectedTypes.size()
+                                + ", recebido: " + actualTokens.size());
             }
 
             for (int i = 0; i < actualTokens.size(); i++) {
@@ -273,13 +243,12 @@ public class LexerTest {
                         || !actual.getValue().equals(expectedValue)) {
 
                     throw new AssertionError(
-                        sourceName
-                        + ": divergência no token " + (i + 1)
-                        + "\nTipo esperado: " + expectedType
-                        + "\nTipo recebido: " + actualType
-                        + "\nValor esperado: [" + expectedValue + "]"
-                        + "\nValor recebido: [" + actual.getValue() + "]"
-                    );
+                            sourceName
+                                    + ": divergência no token " + (i + 1)
+                                    + "\nTipo esperado: " + expectedType
+                                    + "\nTipo recebido: " + actualType
+                                    + "\nValor esperado: [" + expectedValue + "]"
+                                    + "\nValor recebido: [" + actual.getValue() + "]");
                 }
             }
 
@@ -287,13 +256,11 @@ public class LexerTest {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(
-                "Não foi possível comparar com o XML: " + expectedPath,
-                e
-            );
+                    "Não foi possível comparar com o XML: " + expectedPath,
+                    e);
         }
     }
 
-    
     private static String toXmlTokenType(TokenType type) {
         switch (type) {
             case KEYWORD:
@@ -308,8 +275,7 @@ public class LexerTest {
                 return "identifier";
             default:
                 throw new IllegalArgumentException(
-                    "Tipo de token desconhecido: " + type
-                );
+                        "Tipo de token desconhecido: " + type);
         }
     }
 
@@ -322,12 +288,11 @@ public class LexerTest {
 
         if (tokens.size() != expectedValues.length) {
             throw new AssertionError(
-                "Quantidade de tokens incorreta. Esperado: "
-                + expectedValues.length
-                + ", recebido: " + tokens.size()
-                + "\nEntrada: " + input
-                + "\nTokens: " + tokens
-            );
+                    "Quantidade de tokens incorreta. Esperado: "
+                            + expectedValues.length
+                            + ", recebido: " + tokens.size()
+                            + "\nEntrada: " + input
+                            + "\nTokens: " + tokens);
         }
 
         for (int i = 0; i < expectedValues.length; i++) {
@@ -335,10 +300,9 @@ public class LexerTest {
 
             if (!actualValue.equals(expectedValues[i])) {
                 throw new AssertionError(
-                    "Token na posição " + i
-                    + ": esperado [" + expectedValues[i]
-                    + "], recebido [" + actualValue + "]"
-                );
+                        "Token na posição " + i
+                                + ": esperado [" + expectedValues[i]
+                                + "], recebido [" + actualValue + "]");
             }
         }
     }
@@ -353,27 +317,24 @@ public class LexerTest {
 
         if (tokens.size() != 1) {
             throw new AssertionError(
-                "Entrada: " + input
-                + " | Esperado 1 token, recebido: " + tokens.size()
-            );
+                    "Entrada: " + input
+                            + " | Esperado 1 token, recebido: " + tokens.size());
         }
 
         Token token = tokens.get(0);
 
         if (token.getType() != expectedType) {
             throw new AssertionError(
-                "Entrada: " + input
-                + " | Tipo esperado: " + expectedType
-                + " | Tipo recebido: " + token.getType()
-            );
+                    "Entrada: " + input
+                            + " | Tipo esperado: " + expectedType
+                            + " | Tipo recebido: " + token.getType());
         }
 
         if (!token.getValue().equals(expectedValue)) {
             throw new AssertionError(
-                "Entrada: " + input
-                + " | Valor esperado: [" + expectedValue
-                + "] | Valor recebido: [" + token.getValue() + "]"
-            );
+                    "Entrada: " + input
+                            + " | Valor esperado: [" + expectedValue
+                            + "] | Valor recebido: [" + token.getValue() + "]");
         }
     }
 
@@ -383,8 +344,7 @@ public class LexerTest {
             lexer.tokenize();
 
             throw new AssertionError(
-                "Era esperada uma exceção para a entrada: " + input
-            );
+                    "Era esperada uma exceção para a entrada: " + input);
         } catch (AssertionError error) {
             throw error;
         } catch (RuntimeException expected) {

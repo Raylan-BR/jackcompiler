@@ -61,9 +61,9 @@ public class Parser {
         Token token = peek();
 
         throw new RuntimeException(
-            "Erro de sintaxe na linha " + token.getLine()
-                    + ", coluna " + token.getColumn()
-                    + ": esperado " + type
-                    + ", mas encontrado '" + token.getValue() + "'.");
+                "Erro de sintaxe na linha " + token.getLine()
+                        + ", coluna " + token.getColumn()
+                        + ": esperado " + type
+                        + ", mas encontrado '" + token.getValue() + "'.");
     }
 }

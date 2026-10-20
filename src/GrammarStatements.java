@@ -108,13 +108,20 @@ public class GrammarStatements {
      * ('else' '{' statements '}')?
      */
     public void compileIf() {
+        // Inicia com "if" seguido de uma expressão entre parênteses e um bloco de comandos entre chaves
         consumeKeyword("if");
+
         compileConditionAndBlock();
 
+        // O bloco "else" é opcional, então veriofica se ele está presente antes de tentar consumi-lo
         if (checkKeyword("else")) {
+            // Se o bloco "else" estiver presente, consume a palavra-chave "else"
             consumeKeyword("else");
+            // Consome o bloco de comandos entre chaves
             consumeSymbol("{");
+            // Compila os comandos dentro do bloco "else"
             compileStatements();
+            // Consome a chave de fechamento do bloco "else"
             consumeSymbol("}");
         }
     }
@@ -124,14 +131,42 @@ public class GrammarStatements {
      * 'while' '(' expression ')' '{' statements '}'
      */
     public void compileWhile() {
+        // O comando while inicia com 'while' 
+        // seguida de uma expressão entre parênteses e um bloco de comandos entre chaves
         consumeKeyword("while");
+        // Compila a expressão e o bloco de comandos do while
         compileConditionAndBlock();
     }
 
+    /**
+     * do:
+     * 'do' subroutineCall ';'
+     */
     public void compileDo() {
+        // O comando do inicia com 'do'
+        consumeKeyword("do");
+        // Compila a chamada de sub-rotina (subroutine call) que é obrigatória no comando do
+        compileSubroutineCall();
+        // O ponto e vírgula é obrigatório no final do comando do
+        consumeSymbol(";");
     }
 
+    /**
+     * return:
+     * 'return' expression? ';'
+     */
     public void compileReturn() {
+        // O comando return inicia com 'return'
+        consumeKeyword("return");
+
+        // A expressão de retorno é opcional
+        // verifica se há uma expressão antes de tentar compilá-la
+        if (!checkSymbol(";")) {
+            expressions.compileExpression();
+        }
+
+        // O ponto e vírgula é obrigatório no final do comando return
+        consumeSymbol(";");
     }
 
     // Parte comum de if e while: '(' expression ')' '{' statements '}'
@@ -142,6 +177,35 @@ public class GrammarStatements {
         consumeSymbol("{");
         compileStatements();
         consumeSymbol("}");
+    }
+
+    // subroutineName '(' expressionList ')'
+    // | (className | varName) '.' subroutineName '(' expressionList ')'
+    private void compileSubroutineCall() {
+        parser.consume(TokenType.IDENTIFIER);
+
+        if (checkSymbol(".")) {
+            consumeSymbol(".");
+            parser.consume(TokenType.IDENTIFIER);
+        }
+
+        consumeSymbol("(");
+        compileExpressionList();
+        consumeSymbol(")");
+    }
+
+    // (expression (',' expression)*)?
+    private void compileExpressionList() {
+        if (checkSymbol(")")) {
+            return;
+        }
+
+        expressions.compileExpression();
+
+        while (checkSymbol(",")) {
+            consumeSymbol(",");
+            expressions.compileExpression();
+        }
     }
 
     // métodos auxiliares
@@ -176,7 +240,6 @@ public class GrammarStatements {
         parser.advance();
     }
 
-    // Monta o erro de sintaxe no mesmo formato usado pelo Parser.
     private RuntimeException unexpected(String expected) {
         Token token = parser.peek();
 

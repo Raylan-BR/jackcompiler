@@ -16,7 +16,7 @@ public class Main {
         }
 
         // Obtém o caminho informado na linha de comando
-        Path filePath = Path.of(args[0]);
+        Path filePath = Path.of(args[0]).toAbsolutePath().normalize();
 
         // Verifica se a extensão é .jack
         if (!filePath.getFileName().toString()
@@ -56,18 +56,30 @@ public class Main {
             // Gera o XML dos tokens
             TokenXmlWriter xmlWriter = new TokenXmlWriter();
             String xmlOutput = xmlWriter.write(tokens);
-            
-            // Define o caminho do XML gerado em test/actual
+
+            // Obtém o nome do arquivo sem a extensão .jack
             String inputName = filePath.getFileName().toString();
 
-            String outputName = inputName.substring(
+            String baseName = inputName.substring(
                 0, inputName.length() - ".jack".length()
-            ) + "T.xml";
+            );
 
-            Path outputPath = Path.of("test", "actual", outputName);
+            // Nome do XML de tokens
+            String outputName = baseName + "T.xml";
+
+            // Identifica a pasta do projeto a partir do caminho de entrada
+            Path projectFolder = filePath.getParent().getFileName();
+
+            // Define o diretório de saída correspondente
+            Path outputDir = Path.of(
+                "test", "actual", projectFolder.toString()
+            );
 
             // Cria o diretório de saída, caso não exista
-            Files.createDirectories(outputPath.getParent());
+            Files.createDirectories(outputDir);
+
+            // Define o caminho completo do XML
+            Path outputPath = outputDir.resolve(outputName);
 
             // Salva o XML gerado
             Files.writeString(outputPath, xmlOutput);

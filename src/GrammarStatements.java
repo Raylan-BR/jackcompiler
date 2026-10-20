@@ -84,6 +84,7 @@ public class GrammarStatements {
      * 'let' varName ('[' expression ']')? '=' expression ';'
      */
     public void compileLet() {
+        // O comando let inicia com a palavra-chave 'let' seguida de um identificador
         consumeKeyword("let");
         parser.consume(TokenType.IDENTIFIER);
 
@@ -94,21 +95,53 @@ public class GrammarStatements {
             consumeSymbol("]");
         }
 
+        // Atribuição a uma variável
         consumeSymbol("=");
         expressions.compileExpression();
+        // O ponto e vírgula é obrigatório no final do comando let
         consumeSymbol(";");
     }
 
+    /**
+     * if:
+     * 'if' '(' expression ')' '{' statements '}'
+     * ('else' '{' statements '}')?
+     */
     public void compileIf() {
+        consumeKeyword("if");
+        compileConditionAndBlock();
+
+        if (checkKeyword("else")) {
+            consumeKeyword("else");
+            consumeSymbol("{");
+            compileStatements();
+            consumeSymbol("}");
+        }
     }
 
+    /**
+     * while:
+     * 'while' '(' expression ')' '{' statements '}'
+     */
     public void compileWhile() {
+        consumeKeyword("while");
+        compileConditionAndBlock();
     }
 
     public void compileDo() {
     }
 
     public void compileReturn() {
+    }
+
+    // Parte comum de if e while: '(' expression ')' '{' statements '}'
+    private void compileConditionAndBlock() {
+        consumeSymbol("(");
+        expressions.compileExpression();
+        consumeSymbol(")");
+        consumeSymbol("{");
+        compileStatements();
+        consumeSymbol("}");
     }
 
     // métodos auxiliares

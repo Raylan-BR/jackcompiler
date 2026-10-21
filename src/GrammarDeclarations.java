@@ -1,8 +1,8 @@
 public class GrammarDeclarations {
 
     private final Parser parser;
+    private final GrammarStatements statements;
 
-    // Recebe o parser responsável pelos tokens.
     public GrammarDeclarations(Parser parser) {
         if (parser == null) {
             throw new IllegalArgumentException(
@@ -11,6 +11,7 @@ public class GrammarDeclarations {
         }
 
         this.parser = parser;
+        this.statements = new GrammarStatements(parser);
     }
 
     // Compila uma declaração de classe, incluindo variáveis e sub-rotinas.
@@ -149,23 +150,18 @@ public class GrammarDeclarations {
 
     // Compila o corpo de uma sub-rotina, incluindo declarações de variáveis locais e instruções.
     public void compileSubroutineBody() {
-        // Reconhece o símbolo de abertura do corpo da sub-rotina.
+        // Abre o corpo da sub-rotina.
         consumeSymbol("{");
 
-        // Processa as declarações de variáveis locais da sub-rotina.
+        // Processa as declarações de variáveis locais.
         while (checkKeyword("var")) {
             compileVarDec();
         }
 
-        // Até que a análise de instruções seja implementada, rejeita tokens inesperados.
-        if (!checkSymbol("}")) {
-            throw syntaxError(
-                "Unexpected token in subroutine body. "
-                + "Statement parsing may not be implemented yet."
-            );
-        }
+        // Processa zero ou mais comandos.
+        statements.compileStatements();
 
-        // Reconhece o símbolo de fechamento do corpo da sub-rotina.
+        // Fecha o corpo da sub-rotina.
         consumeSymbol("}");
     }
 

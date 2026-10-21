@@ -88,6 +88,14 @@ public class Main {
                 "XML gerado com sucesso: " + outputPath
             );
 
+        // Executa a análise sintática.
+        Parser parser = new Parser(tokens);
+        GrammarDeclarations grammar = new GrammarDeclarations(parser);
+
+        grammar.compileClass();
+
+        System.out.println("Análise sintática concluída com sucesso!");
+
         } catch (IOException e) {
             System.err.println(
                 "Erro ao ler ou salvar arquivo: " + e.getMessage()
@@ -95,7 +103,7 @@ public class Main {
             System.exit(1);
         } catch (RuntimeException e) {
             System.err.println(
-                "Erro durante a análise léxica: " + e.getMessage()
+                "Erro durante a análise léxica/sintática: " + e.getMessage()
             );
             System.exit(1);
         }

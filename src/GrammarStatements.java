@@ -1,35 +1,41 @@
 import java.util.List;
 
-// Responsável por reconhecer os comandos (statements) da linguagem Jack.
 public class GrammarStatements {
 
     private final Parser parser;
     private final GrammarExpressionsTerms expressions;
+    private final SyntaxXmlWriter xmlWriter;
 
-    // Recebe o parser e compartilha o mesmo fluxo de tokens com as expressões.
-    public GrammarStatements(Parser parser) {
+    public GrammarStatements(
+            Parser parser,
+            SyntaxXmlWriter xmlWriter) {
+
         if (parser == null) {
-            throw new IllegalArgumentException("Parser não pode ser nulo");
+            throw new IllegalArgumentException(
+                "Parser não pode ser nulo."
+            );
         }
+
+        if (xmlWriter == null) {
+            throw new IllegalArgumentException(
+                "Writer XML não pode ser nulo."
+            );
+        }
+
         this.parser = parser;
-        this.expressions = new GrammarExpressionsTerms(parser);
+        this.xmlWriter = xmlWriter;
+        this.expressions =
+            new GrammarExpressionsTerms(parser, xmlWriter);
     }
 
-    // Construtor alternativo que recebe uma lista de tokens e cria um Parser.
     public GrammarStatements(List<Token> tokens) {
-        this(new Parser(tokens));
+        this(new Parser(tokens), null);
     }
 
     public Parser getParser() {
         return parser;
     }
 
-    /**
-     * Identifica o comando atual sem consumir o token.
-     *
-     * Retorna let, if, while, do ou return.
-     * Retorna null se o token não iniciar um comando.
-     */
     public String identifyNextCommand() {
         Token token = parser.peek();
 
@@ -44,18 +50,15 @@ public class GrammarStatements {
             case "do":
             case "return":
                 return token.getValue();
+
             default:
                 return null;
         }
     }
 
-    /**
-     * statements: statement*
-     *
-     * Para no primeiro token que não inicia um comando (por exemplo '}').
-     * Quem chamou é responsável por exigir o token de fechamento.
-     */
     public void compileStatements() {
+        xmlWriter.openTag("statements");
+
         String command;
 
         while ((command = identifyNextCommand()) != null) {
@@ -63,113 +66,101 @@ public class GrammarStatements {
                 case "let":
                     compileLet();
                     break;
+
                 case "if":
                     compileIf();
                     break;
+
                 case "while":
                     compileWhile();
                     break;
+
                 case "do":
                     compileDo();
                     break;
+
                 case "return":
                     compileReturn();
                     break;
+
+                default:
+                    throw new IllegalStateException(
+                        "Comando não reconhecido: " + command
+                    );
             }
         }
+
+        xmlWriter.closeTag("statements");
     }
 
-    /**
-     * let:
-     * 'let' varName ('[' expression ']')? '=' expression ';'
-     */
     public void compileLet() {
-        // O comando let inicia com a palavra-chave 'let' seguida de um identificador
+        xmlWriter.openTag("letStatement");
+
         consumeKeyword("let");
         parser.consume(TokenType.IDENTIFIER);
 
-        // Atribuição a um elemento de array.
         if (checkSymbol("[")) {
             consumeSymbol("[");
             expressions.compileExpression();
             consumeSymbol("]");
         }
 
-        // Atribuição a uma variável
         consumeSymbol("=");
         expressions.compileExpression();
-        // O ponto e vírgula é obrigatório no final do comando let
         consumeSymbol(";");
+
+        xmlWriter.closeTag("letStatement");
     }
 
-    /**
-     * if:
-     * 'if' '(' expression ')' '{' statements '}'
-     * ('else' '{' statements '}')?
-     */
     public void compileIf() {
-        // Inicia com "if" seguido de uma expressão entre parênteses e um bloco de comandos entre chaves
-        consumeKeyword("if");
+        xmlWriter.openTag("ifStatement");
 
+        consumeKeyword("if");
         compileConditionAndBlock();
 
-        // O bloco "else" é opcional, então veriofica se ele está presente antes de tentar consumi-lo
         if (checkKeyword("else")) {
-            // Se o bloco "else" estiver presente, consume a palavra-chave "else"
             consumeKeyword("else");
-            // Consome o bloco de comandos entre chaves
             consumeSymbol("{");
-            // Compila os comandos dentro do bloco "else"
             compileStatements();
-            // Consome a chave de fechamento do bloco "else"
             consumeSymbol("}");
         }
+
+        xmlWriter.closeTag("ifStatement");
     }
 
-    /**
-     * while:
-     * 'while' '(' expression ')' '{' statements '}'
-     */
     public void compileWhile() {
-        // O comando while inicia com 'while' 
-        // seguida de uma expressão entre parênteses e um bloco de comandos entre chaves
+        xmlWriter.openTag("whileStatement");
+
         consumeKeyword("while");
-        // Compila a expressão e o bloco de comandos do while
         compileConditionAndBlock();
+
+        xmlWriter.closeTag("whileStatement");
     }
 
-    /**
-     * do:
-     * 'do' subroutineCall ';'
-     */
     public void compileDo() {
-        // O comando do inicia com 'do'
+        xmlWriter.openTag("doStatement");
+
         consumeKeyword("do");
-        // Compila a chamada de sub-rotina (subroutine call) que é obrigatória no comando do
         compileSubroutineCall();
-        // O ponto e vírgula é obrigatório no final do comando do
         consumeSymbol(";");
+
+        xmlWriter.closeTag("doStatement");
     }
 
-    /**
-     * return:
-     * 'return' expression? ';'
-     */
     public void compileReturn() {
-        // O comando return inicia com 'return'
+        xmlWriter.openTag("returnStatement");
+
         consumeKeyword("return");
 
-        // A expressão de retorno é opcional
-        // verifica se há uma expressão antes de tentar compilá-la
         if (!checkSymbol(";")) {
             expressions.compileExpression();
         }
 
-        // O ponto e vírgula é obrigatório no final do comando return
         consumeSymbol(";");
+
+        xmlWriter.closeTag("returnStatement");
     }
 
-    // Parte comum de if e while: '(' expression ')' '{' statements '}'
     private void compileConditionAndBlock() {
         consumeSymbol("(");
         expressions.compileExpression();
@@ -179,8 +170,6 @@ public class GrammarStatements {
         consumeSymbol("}");
     }
 
-    // subroutineName '(' expressionList ')'
-    // | (className | varName) '.' subroutineName '(' expressionList ')'
     private void compileSubroutineCall() {
         parser.consume(TokenType.IDENTIFIER);
 
@@ -190,25 +179,9 @@ public class GrammarStatements {
         }
 
         consumeSymbol("(");
-        compileExpressionList();
+        expressions.compileExpressionList();
         consumeSymbol(")");
     }
-
-    // (expression (',' expression)*)?
-    private void compileExpressionList() {
-        if (checkSymbol(")")) {
-            return;
-        }
-
-        expressions.compileExpression();
-
-        while (checkSymbol(",")) {
-            consumeSymbol(",");
-            expressions.compileExpression();
-        }
-    }
-
-    // métodos auxiliares
 
     private boolean checkKeyword(String expected) {
         Token token = parser.peek();
@@ -230,6 +203,7 @@ public class GrammarStatements {
         if (!checkKeyword(expected)) {
             throw unexpected(expected);
         }
+
         parser.advance();
     }
 
@@ -237,6 +211,7 @@ public class GrammarStatements {
         if (!checkSymbol(expected)) {
             throw unexpected(expected);
         }
+
         parser.advance();
     }
 

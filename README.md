@@ -29,7 +29,7 @@ javac -d target/classes $(find src -name "*.java")
 ```
 3. Para executar a análise léxica e sintática sob um arquivo oficial:
 ```bash
-java -cp target/classes Main test/fixtures/ArrayTest/MainT.jack
+java -cp target/classes Main test/fixtures/ArrayTest/Main.jack
 ```
 (Nesse caso usamos o teste Main do diretório ArrayTest, mas você pode usar os outros arquivos para confirmar a geração do xml).
 
@@ -43,16 +43,21 @@ javac -d target/classes (Get-ChildItem -Path src -Filter *.java -Recurse | Selec
 
 ## 6. Estratégia de testes
 
-A estratégia de testes adotada consiste na **geração de uma saída XML pelo analisador léxico e na comparação dessa saída com os arquivos oficiais de referência do Nand2Tetris**, utilizando a ferramenta `diff`.
+A estratégia de testes adotada consiste na **geração de uma saída XML pelo analisador léxico/sintático e na comparação dessa saída com os arquivos oficiais de referência do Nand2Tetris**, utilizando a ferramenta `diff`.
 
 Essa abordagem permite verificar se os tokens identificados pelo nosso programa correspondem aos tokens esperados para o mesmo arquivo-fonte.
 
 ### 6.1. Comparação com `diff`
 
-Após gerar o XML, a comparação pode ser realizada pelo terminal com:
+Após gerar o XML, a comparação pode ser realizada pelo terminal. Na etapa **3** de **5.1** nosso compilador gera o MainT.xml e o MainP.xml no diretório actual para comparação.
 
+Para o xml da análise **léxica**:
 ```bash
-diff -u -w test/fixtures/ArrayTest/MainT.xml test/fixtures/ArrayTest/MainT.xml
+diff -u -w test/actual/ArrayTest/MainT.xml test/expected/ArrayTest/MainT.xml
+```
+Para o xml da análise **sintática**:
+```bash
+diff -u -w test/actual/ArrayTest/MainP.xml test/expected/ArrayTest/Main.xml
 ```
 
 

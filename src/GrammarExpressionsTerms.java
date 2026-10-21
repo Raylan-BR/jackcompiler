@@ -1,59 +1,75 @@
+
 public class GrammarExpressionsTerms {
 
     private final Parser parser;
+    private final SyntaxXmlWriter xmlWriter;
 
-    public GrammarExpressionsTerms(Parser parser){
-        if(parser == null){
+    public GrammarExpressionsTerms(
+            Parser parser,
+            SyntaxXmlWriter xmlWriter) {
+
+        if (parser == null) {
             throw new IllegalArgumentException(
                 "O parser não pode ser nulo."
             );
         }
 
-        this.parser = parser;
+        if (xmlWriter == null) {
+            throw new IllegalArgumentException(
+                "O writer XML não pode ser nulo."
+            );
+        }
 
+        this.parser = parser;
+        this.xmlWriter = xmlWriter;
     }
 
-    public void compileExpression(){
+    public void compileExpression() {
+        xmlWriter.openTag("expression");
+
         compileTerm();
 
-        while(compileOp()){
+        while (compileOp()) {
             compileTerm();
         }
 
+        xmlWriter.closeTag("expression");
     }
 
-    public void compileTerm(){
+    public void compileTerm() {
         Token token = parser.peek();
 
-        if(token == null){
+        if (token == null) {
             throw new RuntimeException(
                 "Erro de sintaxe: esperado um termo, mas o arquivo terminou."
             );
         }
+
+        xmlWriter.openTag("term");
 
         switch (token.getType()) {
             case INTEGER_CONSTANT:
             case STRING_CONSTANT:
                 parser.advance();
                 break;
+
             case KEYWORD:
                 if (!compileKeywordConstant()) {
                     throw new RuntimeException(
                         "Erro de sintaxe: constante de palavra-chave inválida: "
-                        + token.getValue()
+                            + token.getValue()
                     );
                 }
                 break;
-            
+
             case IDENTIFIER:
                 compileIdentifierTerm();
                 break;
 
             case SYMBOL:
-                if(compileUnaryOp()){
+                if (compileUnaryOp()) {
                     compileTerm();
-                } else if(isSymbol("(")){
-                    // exemplo: (x + 2)
+                } else if (isSymbol("(")) {
                     consumeSymbol("(");
                     compileExpression();
                     consumeSymbol(")");
@@ -71,37 +87,45 @@ public class GrammarExpressionsTerms {
                     "Erro de sintaxe: termo inválido: " + token.getValue()
                 );
         }
+
+        xmlWriter.closeTag("term");
     }
 
-    public boolean compileOp(){
+    public boolean compileOp() {
         Token token = parser.peek();
 
-        if(token == null || token.getType() != TokenType.SYMBOL){
+        if (token == null || token.getType() != TokenType.SYMBOL) {
             return false;
         }
 
-        String operator = token.getValue();
-
-        switch (operator) {
-            case "+","-","*","/","&","|","<",">","=":
+        switch (token.getValue()) {
+            case "+":
+            case "-":
+            case "*":
+            case "/":
+            case "&":
+            case "|":
+            case "<":
+            case ">":
+            case "=":
                 parser.advance();
                 return true;
-        
+
             default:
                 return false;
         }
     }
-    
-    public boolean compileUnaryOp(){
+
+    public boolean compileUnaryOp() {
         Token token = parser.peek();
 
-        if(token == null || token.getType() != TokenType.SYMBOL){
+        if (token == null || token.getType() != TokenType.SYMBOL) {
             return false;
         }
 
         String operator = token.getValue();
 
-        if(operator.equals("-") || operator.equals("~")){
+        if (operator.equals("-") || operator.equals("~")) {
             parser.advance();
             return true;
         }
@@ -109,40 +133,39 @@ public class GrammarExpressionsTerms {
         return false;
     }
 
-    public boolean compileKeywordConstant(){
+    public boolean compileKeywordConstant() {
         Token token = parser.peek();
 
         if (token == null || token.getType() != TokenType.KEYWORD) {
             return false;
         }
 
-        String keyword = token.getValue();
-
-        switch (keyword) {
-            case "true", "false", "null", "this":
+        switch (token.getValue()) {
+            case "true":
+            case "false":
+            case "null":
+            case "this":
                 parser.advance();
                 return true;
-        
+
             default:
                 return false;
         }
     }
 
-    // métodos auxiliares
-    
-    private boolean isSymbol(String expected){
+    private boolean isSymbol(String expected) {
         Token token = parser.peek();
 
         return token != null
             && token.getType() == TokenType.SYMBOL
-            && token.getValue().equals((expected));
+            && token.getValue().equals(expected);
     }
 
-    private void consumeSymbol(String expected){
-        if(!isSymbol(expected)){
+    private void consumeSymbol(String expected) {
+        if (!isSymbol(expected)) {
             Token token = parser.peek();
 
-            if(token == null){
+            if (token == null) {
                 throw new RuntimeException(
                     "Erro de sintaxe: esperado '" + expected
                         + "', mas o arquivo terminou."
@@ -160,41 +183,38 @@ public class GrammarExpressionsTerms {
         parser.advance();
     }
 
-    private void compileExpressionList(){
-        // uma lista vazia é válida.
-        if(isSymbol(")")){
-            return;
-        }
-        compileExpression();
+    public void compileExpressionList() {
+        xmlWriter.openTag("expressionList");
 
-        while(isSymbol(",")){
-            consumeSymbol(",");
+        if (!isSymbol(")")) {
             compileExpression();
+
+            while (isSymbol(",")) {
+                consumeSymbol(",");
+                compileExpression();
+            }
         }
+
+        xmlWriter.closeTag("expressionList");
     }
 
-    private void compileIdentifierTerm(){
+    private void compileIdentifierTerm() {
         parser.consume(TokenType.IDENTIFIER);
 
-        if(isSymbol("[")){
-            // caso: vector[i]
+        if (isSymbol("[")) {
             consumeSymbol("[");
             compileExpression();
             consumeSymbol("]");
-        } else if(isSymbol("(")){
-            // caso: function(x)
+        } else if (isSymbol("(")) {
             consumeSymbol("(");
             compileExpressionList();
             consumeSymbol(")");
-        } else if(isSymbol(".")){
-            // caso: object.method(x)
+        } else if (isSymbol(".")) {
             consumeSymbol(".");
             parser.consume(TokenType.IDENTIFIER);
             consumeSymbol("(");
             compileExpressionList();
             consumeSymbol(")");
         }
-
-        // se não houver [, ( ou ., é uma variável simples
     }
 }

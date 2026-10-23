@@ -1,4 +1,4 @@
-# Analisador Léxico Jack — Nand2Tetris
+# Analisador Sintático Jack — Nand2Tetris
 
 ## 1. Integrantes
 
@@ -52,12 +52,28 @@ Essa abordagem permite verificar se os tokens identificados pelo nosso programa 
 Após gerar o XML, a comparação pode ser realizada pelo terminal. Na etapa **3** de **5.1** nosso compilador gera o MainT.xml e o MainP.xml no diretório actual para comparação.
 
 Para o xml da análise **léxica**:
+
+Linux:
 ```bash
 diff -u -w test/actual/ArrayTest/MainT.xml test/expected/ArrayTest/MainT.xml
 ```
+windows:
+```bash
+Compare-Object `
+    (Get-Content -Raw test/actual/ArrayTest/MainT.xml) `
+    (Get-Content -Raw test/expected/ArrayTest/MainT.xml)
+```
 Para o xml da análise **sintática**:
+
+Linux:
 ```bash
 diff -u -w test/actual/ArrayTest/MainP.xml test/expected/ArrayTest/Main.xml
+```
+windows:
+```bash
+Compare-Object `
+    (Get-Content -Raw test/actual/ArrayTest/MainP.xml) `
+    (Get-Content -Raw test/expected/ArrayTest/Main.xml)
 ```
 
 

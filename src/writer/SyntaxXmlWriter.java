@@ -1,7 +1,9 @@
 package writer;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -14,7 +16,12 @@ public class SyntaxXmlWriter implements AutoCloseable {
     private int indentation = 0;
 
     public SyntaxXmlWriter(Path outputPath) throws IOException {
-        this.writer = Files.newBufferedWriter(outputPath);
+        this(Files.newBufferedWriter(outputPath));
+    }
+
+    // Permite escrever em memória (ex.: StringWriter nos testes).
+    public SyntaxXmlWriter(Writer out) {
+        this.writer = new BufferedWriter(out);
     }
 
     public void openTag(String tag) {

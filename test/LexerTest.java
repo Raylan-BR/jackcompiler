@@ -1,8 +1,18 @@
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -12,292 +22,34 @@ import lexer.Lexer;
 import lexer.Token;
 import lexer.TokenType;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class LexerTest {
 
-    public static void main(String[] args) {
-        // Testes de tokens básicos
-        testKeywords();
-        testIdentifiers();
-        testSymbols();
-        testIntegerConstants();
-        testStringConstants();
-        testInvalidInteger();
-        testUnterminatedString();
-        
-        // Testes de comentários e espaços em branco
-        testWhitespace();
-        testLineComments();
-        testBlockComments();
-        testMultilineComments();
-        testUnterminatedBlockComment();
+    // ---------- auxiliares ----------
 
-        testOfficialFiles();
-
-        System.out.println("\nTodos os testes foram executados!");
+    private static List<Token> tokenize(String input) {
+        return new Lexer(input).tokenize();
     }
 
-    private static void testKeywords() {
-        assertSingleToken("class", TokenType.KEYWORD, "class");
-        assertSingleToken("function", TokenType.KEYWORD, "function");
-        assertSingleToken("return", TokenType.KEYWORD, "return");
+    private static void assertSingleToken(
+            String input, TokenType type, String value) {
 
-        System.out.println("PASSOU: palavras-chave");
+        List<Token> tokens = tokenize(input);
+
+        assertEquals(1, tokens.size(), "Entrada: " + input);
+        assertEquals(type, tokens.get(0).getType(), "Entrada: " + input);
+        assertEquals(value, tokens.get(0).getValue(), "Entrada: " + input);
     }
 
-    private static void testIdentifiers() {
-        assertSingleToken("Main", TokenType.IDENTIFIER, "Main");
-        assertSingleToken("main", TokenType.IDENTIFIER, "main");
-        assertSingleToken("contador", TokenType.IDENTIFIER, "contador");
+    private static void assertTokenValues(
+            String input, String... expected) {
 
-        System.out.println("PASSOU: identificadores");
+        List<String> actual = tokenize(input).stream()
+            .map(Token::getValue)
+            .toList();
+
+        assertEquals(List.of(expected), actual);
     }
 
-    private static void testSymbols() {
-        String[] symbols = {"{", "}", "(", ")", ";", "="};
-
-        for (String symbol : symbols) {
-            assertSingleToken(symbol, TokenType.SYMBOL, symbol);
-        }
-
-        System.out.println("PASSOU: símbolos");
-    }
-
-    private static void testIntegerConstants() {
-        assertSingleToken("0", TokenType.INTEGER_CONSTANT, "0");
-        assertSingleToken("123", TokenType.INTEGER_CONSTANT, "123");
-        assertSingleToken("32767", TokenType.INTEGER_CONSTANT, "32767");
-
-        System.out.println("PASSOU: constantes inteiras");
-    }
-
-    private static void testStringConstants() {
-        assertSingleToken("\"Olá\"", TokenType.STRING_CONSTANT, "Olá");
-        assertSingleToken("\"\"", TokenType.STRING_CONSTANT, "");
-
-        System.out.println("PASSOU: constantes de string");
-    }
-
-    private static void testInvalidInteger() {
-        assertInvalidInput("32768");
-
-        System.out.println("PASSOU: rejeição de inteiro fora do limite");
-    }
-
-    private static void testUnterminatedString() {
-        assertInvalidInput("\"texto sem fechamento");
-
-        System.out.println("PASSOU: rejeição de string não terminada");
-    }
-
-    
-    private static void testWhitespace() {
-        String input = "class \t Main\r\n { \n }";
-
-        assertTokenSequence(
-            input,
-            "class", "Main", "{", "}"
-        );
-
-        System.out.println("PASSOU: espaços em branco");
-    }
-
-    
-    
-    private static void testLineComments() {
-        String input =
-            "class Main { // comentário de linha\n" +
-            "function void main() { return; } // outro comentário";
-
-        assertTokenSequence(
-            input,
-            "class", "Main", "{",
-            "function", "void", "main", "(",
-            ")", "{", "return", ";", "}"
-        );
-
-        System.out.println("PASSOU: comentários de linha");
-    }
-
-    
-    private static void testBlockComments() {
-        String input =
-            "class /* comentário */ Main { }";
-
-        assertTokenSequence(
-            input,
-            "class", "Main", "{", "}"
-        );
-
-        System.out.println("PASSOU: comentários de bloco");
-    }
-
-    
-    private static void testMultilineComments() {
-        String input =
-            "class Main {\n" +
-            "/* comentário\n" +
-            "   em várias linhas\n" +
-            "*/\n" +
-            "function void main() { return; }\n" +
-            "}";
-
-        assertTokenSequence(
-            input,
-            "class", "Main", "{",
-            "function", "void", "main", "(",
-            ")", "{", "return", ";", "}", "}"
-        );
-
-        System.out.println("PASSOU: comentários multilinha");
-    }
-
-    
-    private static void testUnterminatedBlockComment() {
-        assertInvalidInput("class Main { /* comentário sem fechamento");
-
-        System.out.println("PASSOU: rejeição de comentário não terminado");
-    }
-
-    private static void testOfficialFiles() {
-        String[][] files = {
-            {"Main.jack", "MainT.xml"},
-            {"Square.jack", "SquareT.xml"},
-            {"SquareGame.jack", "SquareGameT.xml"}
-        };
-
-        for (String[] pair : files) {
-            Path sourcePath = Path.of(
-                "test", "fixtures", pair[0]
-            );
-
-            Path expectedPath = Path.of(
-                "test", "expected", pair[1]
-            );
-
-            System.out.println("Diretório atual: " +
-                System.getProperty("user.dir"));
-
-            System.out.println("XML esperado: " +
-                expectedPath.toAbsolutePath());
-
-            System.out.println("Arquivo existe? " +
-                Files.exists(expectedPath));
-
-            try {
-                String input = Files.readString(sourcePath);
-                Lexer lexer = new Lexer(input);
-                List<Token> actualTokens = lexer.tokenize();
-
-                assertMatchesExpectedXml(
-                    actualTokens,
-                    expectedPath,
-                    pair[0]
-                );
-
-                System.out.println(
-                    "PASSOU: " + pair[0]
-                    + " — " + actualTokens.size() + " tokens conferidos"
-                );
-
-            } catch (IOException e) {
-                throw new RuntimeException(
-                    "Erro ao ler os arquivos de teste: " + pair[0],
-                    e
-                );
-            }
-        }
-    }
-
-    
-    private static void assertMatchesExpectedXml(
-            List<Token> actualTokens,
-            Path expectedPath,
-            String sourceName) throws IOException {
-
-        try {
-            DocumentBuilderFactory factory =
-                DocumentBuilderFactory.newInstance();
-
-            factory.setFeature(
-                "http://apache.org/xml/features/disallow-doctype-decl",
-                true
-            );
-
-            Document document = factory
-                .newDocumentBuilder()
-                .parse(expectedPath.toFile());
-
-            Element root = document.getDocumentElement();
-
-            if (!root.getTagName().equals("tokens")) {
-                throw new AssertionError(
-                    "XML de referência inválido: " + expectedPath
-                );
-            }
-
-            List<String> expectedTypes = new ArrayList<>();
-            List<String> expectedValues = new ArrayList<>();
-
-            NodeList children = root.getChildNodes();
-
-            for (int i = 0; i < children.getLength(); i++) {
-                Node node = children.item(i);
-
-                if (node.getNodeType() != Node.ELEMENT_NODE) {
-                    continue;
-                }
-
-                Element element = (Element) node;
-
-                expectedTypes.add(element.getTagName());
-                expectedValues.add(element.getTextContent().trim());
-            }
-
-            if (actualTokens.size() != expectedTypes.size()) {
-                throw new AssertionError(
-                    sourceName
-                    + ": quantidade de tokens diferente. Esperado: "
-                    + expectedTypes.size()
-                    + ", recebido: " + actualTokens.size()
-                );
-            }
-
-            for (int i = 0; i < actualTokens.size(); i++) {
-                Token actual = actualTokens.get(i);
-
-                String expectedType = expectedTypes.get(i);
-                String expectedValue = expectedValues.get(i);
-
-                String actualType = toXmlTokenType(actual.getType());
-
-                if (!actualType.equals(expectedType)
-                        || !actual.getValue().equals(expectedValue)) {
-
-                    throw new AssertionError(
-                        sourceName
-                        + ": divergência no token " + (i + 1)
-                        + "\nTipo esperado: " + expectedType
-                        + "\nTipo recebido: " + actualType
-                        + "\nValor esperado: [" + expectedValue + "]"
-                        + "\nValor recebido: [" + actual.getValue() + "]"
-                    );
-                }
-            }
-
-        } catch (AssertionError e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(
-                "Não foi possível comparar com o XML: " + expectedPath,
-                e
-            );
-        }
-    }
-
-    
     private static String toXmlTokenType(TokenType type) {
         switch (type) {
             case KEYWORD:
@@ -312,87 +64,222 @@ public class LexerTest {
                 return "identifier";
             default:
                 throw new IllegalArgumentException(
-                    "Tipo de token desconhecido: " + type
-                );
+                    "Tipo de token desconhecido: " + type);
         }
     }
 
-    private static void assertTokenSequence(
-            String input,
-            String... expectedValues) {
+    // ---------- tokens básicos ----------
 
-        Lexer lexer = new Lexer(input);
-        List<Token> tokens = lexer.tokenize();
+    @Test
+    void deveReconhecerPalavrasChave() {
+        assertSingleToken("class", TokenType.KEYWORD, "class");
+        assertSingleToken("function", TokenType.KEYWORD, "function");
+        assertSingleToken("return", TokenType.KEYWORD, "return");
+    }
 
-        if (tokens.size() != expectedValues.length) {
-            throw new AssertionError(
-                "Quantidade de tokens incorreta. Esperado: "
-                + expectedValues.length
-                + ", recebido: " + tokens.size()
-                + "\nEntrada: " + input
-                + "\nTokens: " + tokens
-            );
+    @Test
+    void deveReconhecerIdentificadores() {
+        assertSingleToken("Main", TokenType.IDENTIFIER, "Main");
+        assertSingleToken("contador", TokenType.IDENTIFIER, "contador");
+        assertSingleToken("_x1", TokenType.IDENTIFIER, "_x1");
+    }
+
+    @Test
+    void naoDeveConfundirIdentificadorComPalavraChave() {
+        assertSingleToken("classe", TokenType.IDENTIFIER, "classe");
+    }
+
+    @Test
+    void deveReconhecerSimbolos() {
+        for (String symbol : new String[] {
+                "{", "}", "(", ")", "[", "]", ".", ",", ";",
+                "+", "-", "*", "/", "&", "|", "<", ">", "=", "~" }) {
+            assertSingleToken(symbol, TokenType.SYMBOL, symbol);
         }
+    }
 
-        for (int i = 0; i < expectedValues.length; i++) {
-            String actualValue = tokens.get(i).getValue();
+    @Test
+    void deveReconhecerConstantesInteiras() {
+        assertSingleToken("0", TokenType.INTEGER_CONSTANT, "0");
+        assertSingleToken("123", TokenType.INTEGER_CONSTANT, "123");
+        assertSingleToken("32767", TokenType.INTEGER_CONSTANT, "32767");
+    }
 
-            if (!actualValue.equals(expectedValues[i])) {
-                throw new AssertionError(
-                    "Token na posição " + i
-                    + ": esperado [" + expectedValues[i]
-                    + "], recebido [" + actualValue + "]"
-                );
+    @Test
+    void deveReconhecerConstantesDeString() {
+        assertSingleToken("\"Olá\"", TokenType.STRING_CONSTANT, "Olá");
+        assertSingleToken("\"\"", TokenType.STRING_CONSTANT, "");
+        assertSingleToken(
+            "\"com espaço \"", TokenType.STRING_CONSTANT, "com espaço ");
+    }
+
+    @Test
+    void naoDeveTratarComentarioDentroDeStringComoComentario() {
+        assertSingleToken(
+            "\"// nao e comentario\"",
+            TokenType.STRING_CONSTANT,
+            "// nao e comentario");
+    }
+
+    // ---------- entradas inválidas ----------
+
+    @Test
+    void deveRejeitarInteiroForaDoLimite() {
+        assertThrows(RuntimeException.class, () -> tokenize("32768"));
+    }
+
+    @Test
+    void deveRejeitarStringNaoTerminada() {
+        assertThrows(
+            RuntimeException.class,
+            () -> tokenize("\"texto sem fechamento"));
+    }
+
+    @Test
+    void deveRejeitarQuebraDeLinhaDentroDeString() {
+        assertThrows(
+            RuntimeException.class,
+            () -> tokenize("\"linha1\nlinha2\""));
+    }
+
+    @Test
+    void deveRejeitarCaractereInvalido() {
+        assertThrows(RuntimeException.class, () -> tokenize("@"));
+    }
+
+    // ---------- espaços e comentários ----------
+
+    @Test
+    void deveIgnorarEspacosEmBranco() {
+        assertTokenValues(
+            "class \t Main\r\n { \n }",
+            "class", "Main", "{", "}");
+    }
+
+    @Test
+    void deveIgnorarComentariosDeLinha() {
+        assertTokenValues(
+            "class Main { // comentário de linha\n"
+                + "function void main() { return; } // outro",
+            "class", "Main", "{",
+            "function", "void", "main", "(", ")",
+            "{", "return", ";", "}");
+    }
+
+    @Test
+    void deveIgnorarComentariosDeBloco() {
+        assertTokenValues(
+            "class /* comentário */ Main { }",
+            "class", "Main", "{", "}");
+    }
+
+    @Test
+    void deveIgnorarComentariosMultilinha() {
+        assertTokenValues(
+            "class Main {\n"
+                + "/* comentário\n"
+                + "   em várias linhas\n"
+                + "*/\n"
+                + "function void main() { return; }\n"
+                + "}",
+            "class", "Main", "{",
+            "function", "void", "main", "(", ")",
+            "{", "return", ";", "}", "}");
+    }
+
+    @Test
+    void deveRejeitarComentarioDeBlocoNaoTerminado() {
+        assertThrows(
+            RuntimeException.class,
+            () -> tokenize("class Main { /* sem fechamento"));
+    }
+
+    // ---------- arquivos oficiais ----------
+
+    /** Todo .jack em test/fixtures, com o XML de test/expected correspondente. */
+    static Stream<Arguments> officialFiles() throws IOException {
+        Path fixtures = Path.of("test", "fixtures");
+        Path expected = Path.of("test", "expected");
+
+        try (Stream<Path> paths = Files.walk(fixtures)) {
+            return paths
+                .filter(p -> p.getFileName().toString().endsWith(".jack"))
+                .sorted()
+                .map(jack -> {
+                    Path relative = fixtures.relativize(jack);
+                    String name = jack.getFileName().toString();
+                    String base = name.substring(0, name.length() - ".jack".length());
+
+                    Path xml = expected.resolve(relative)
+                        .resolveSibling(base + "T.xml");
+
+                    return Arguments.of(relative.toString(), jack, xml);
+                })
+                .toList()
+                .stream();
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("officialFiles")
+    void deveGerarOsMesmosTokensDoArquivoOficial(
+            String name, Path jack, Path expectedXml) throws Exception {
+
+        assertTrue(
+            Files.exists(expectedXml),
+            "XML de referência não encontrado: " + expectedXml);
+
+        List<Token> actual = tokenize(Files.readString(jack));
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(
+            "http://apache.org/xml/features/disallow-doctype-decl", true);
+
+        Document document = factory.newDocumentBuilder()
+            .parse(expectedXml.toFile());
+        Element root = document.getDocumentElement();
+
+        assertEquals("tokens", root.getTagName());
+
+        List<String> expectedTypes = new ArrayList<>();
+        List<String> expectedValues = new ArrayList<>();
+
+        NodeList children = root.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node node = children.item(i);
+
+            if (node.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
             }
+
+            Element element = (Element) node;
+            expectedTypes.add(element.getTagName());
+            expectedValues.add(unwrap(element.getTextContent()));
+        }
+
+        assertEquals(
+            expectedTypes.size(), actual.size(),
+            name + ": quantidade de tokens diferente");
+
+        for (int i = 0; i < actual.size(); i++) {
+            Token token = actual.get(i);
+
+            assertEquals(
+                expectedTypes.get(i), toXmlTokenType(token.getType()),
+                name + ": tipo divergente no token " + (i + 1));
+            assertEquals(
+                expectedValues.get(i), token.getValue(),
+                name + ": valor divergente no token " + (i + 1));
         }
     }
 
-    private static void assertSingleToken(
-            String input,
-            TokenType expectedType,
-            String expectedValue) {
-
-        Lexer lexer = new Lexer(input);
-        List<Token> tokens = lexer.tokenize();
-
-        if (tokens.size() != 1) {
-            throw new AssertionError(
-                "Entrada: " + input
-                + " | Esperado 1 token, recebido: " + tokens.size()
-            );
+    /** Remove só o espaço de cada lado de "<tag> valor </tag>", preservando espaços do valor. */
+    private static String unwrap(String text) {
+        if (text.length() >= 2
+                && text.startsWith(" ")
+                && text.endsWith(" ")) {
+            return text.substring(1, text.length() - 1);
         }
-
-        Token token = tokens.get(0);
-
-        if (token.getType() != expectedType) {
-            throw new AssertionError(
-                "Entrada: " + input
-                + " | Tipo esperado: " + expectedType
-                + " | Tipo recebido: " + token.getType()
-            );
-        }
-
-        if (!token.getValue().equals(expectedValue)) {
-            throw new AssertionError(
-                "Entrada: " + input
-                + " | Valor esperado: [" + expectedValue
-                + "] | Valor recebido: [" + token.getValue() + "]"
-            );
-        }
-    }
-
-    private static void assertInvalidInput(String input) {
-        try {
-            Lexer lexer = new Lexer(input);
-            lexer.tokenize();
-
-            throw new AssertionError(
-                "Era esperada uma exceção para a entrada: " + input
-            );
-        } catch (AssertionError error) {
-            throw error;
-        } catch (RuntimeException expected) {
-            // A entrada inválida foi rejeitada como esperado.
-        }
+        return text.trim();
     }
 }

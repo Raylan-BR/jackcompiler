@@ -1,14 +1,20 @@
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.StringWriter;
+
 import org.junit.jupiter.api.Test;
 
 import lexer.Lexer;
 import parser.GrammarStatements;
+import parser.Parser;
+import writer.SyntaxXmlWriter;
 
 class GrammarStatementsTest {
 
     private static GrammarStatements grammarOf(String code) {
-        return new GrammarStatements(new Lexer(code).tokenize());
+        SyntaxXmlWriter writer = new SyntaxXmlWriter(new StringWriter());
+        Parser parser = new Parser(new Lexer(code).tokenize(), writer);
+        return new GrammarStatements(parser, writer);
     }
 
     // ---------- identifyNextCommand ----------

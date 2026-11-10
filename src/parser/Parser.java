@@ -1,4 +1,5 @@
 package parser;
+
 import writer.SyntaxXmlWriter;
 
 import java.util.List;
@@ -29,11 +30,11 @@ public class Parser {
         this.xmlWriter = xmlWriter;
     }
 
-    boolean isAtEnd() {
+    public boolean isAtEnd() {
         return current >= tokens.size();
     }
 
-    Token peek() {
+    public Token peek() {
         if (isAtEnd()) {
             return null;
         }
@@ -41,7 +42,7 @@ public class Parser {
         return tokens.get(current);
     }
 
-    Token advance() {
+    public Token advance() {
         if (isAtEnd()) {
             return null;
         }
@@ -58,7 +59,7 @@ public class Parser {
         return token;
     }
 
-    boolean match(TokenType type) {
+    public boolean match(TokenType type) {
         if (isAtEnd() || peek().getType() != type) {
             return false;
         }
@@ -67,7 +68,7 @@ public class Parser {
         return true;
     }
 
-    Token consume(TokenType type) {
+    public Token consume(TokenType type) {
         if (isAtEnd()) {
             throw new RuntimeException(
                 "Erro de sintaxe: esperado " + type

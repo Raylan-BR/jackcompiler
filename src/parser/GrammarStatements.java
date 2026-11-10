@@ -1,5 +1,4 @@
 package parser;
-import java.util.List;
 
 import lexer.Token;
 import lexer.TokenType;
@@ -31,10 +30,6 @@ public class GrammarStatements {
         this.xmlWriter = xmlWriter;
         this.expressions =
             new GrammarExpressionsTerms(parser, xmlWriter);
-    }
-
-    public GrammarStatements(List<Token> tokens) {
-        this(new Parser(tokens), null);
     }
 
     public Parser getParser() {

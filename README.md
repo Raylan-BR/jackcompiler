@@ -76,4 +76,23 @@ Compare-Object `
     (Get-Content -Raw test/expected/ArrayTest/Main.xml)
 ```
 
+### 6.2 Testes com JUnit
+
+Pré-requisito: JDK 17 ou superior instalado (`java -version` para conferir).
+
+```bash
+# Linux/Mac
+./mvnw test
+
+# Windows
+.\mvnw.cmd test
+```
+
+Se aparecer erro de `JAVA_HOME`, defina a variável apontando para a pasta do seu JDK.
+A primeira execução baixa o Maven e as dependências, então precisa de internet.
+
+```bash
+# Exemplo
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.10"
+```
 

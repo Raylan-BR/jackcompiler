@@ -1,5 +1,6 @@
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.StringWriter;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import lexer.Token;
 import lexer.TokenType;
 import parser.GrammarDeclarations;
 import parser.Parser;
+import writer.SyntaxXmlWriter;
 
 public class GrammarDeclarationsTest {
 
@@ -16,8 +18,9 @@ public class GrammarDeclarationsTest {
     }
 
     private GrammarDeclarations createGrammar(Token... tokens) {
-        Parser parser = new Parser(List.of(tokens));
-        return new GrammarDeclarations(parser);
+        SyntaxXmlWriter writer = new SyntaxXmlWriter(new StringWriter());
+        Parser parser = new Parser(List.of(tokens), writer);
+        return new GrammarDeclarations(parser, writer);
     }
 
     // Testes para verificar a aceitação de uma classe vazia.

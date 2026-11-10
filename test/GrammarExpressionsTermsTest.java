@@ -1,45 +1,75 @@
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.StringWriter;
+
 import org.junit.jupiter.api.Test;
 
-import lexer.Token;
-import lexer.TokenType;
+import lexer.Lexer;
 import parser.GrammarExpressionsTerms;
 import parser.Parser;
-
-import static org.junit.jupiter.api.Assertions.*;
-import java.util.List;
+import writer.SyntaxXmlWriter;
 
 public class GrammarExpressionsTermsTest {
 
+    private Parser parser;
+
+    private GrammarExpressionsTerms grammarOf(String code) {
+        SyntaxXmlWriter writer = new SyntaxXmlWriter(new StringWriter());
+        parser = new Parser(new Lexer(code).tokenize(), writer);
+        return new GrammarExpressionsTerms(parser, writer);
+    }
+
     @Test
     void deveAceitarExpressaoValida() {
-        List<Token> tokens = List.of(
-            new Token(TokenType.IDENTIFIER, "x", 1, 1),
-            new Token(TokenType.SYMBOL, "+", 1, 3),
-            new Token(TokenType.INTEGER_CONSTANT, "2", 1, 5)
-        );
+        GrammarExpressionsTerms grammar = grammarOf("x + 2");
 
-        Parser parser = new Parser(tokens);
-        GrammarExpressionsTerms grammar =
-                new GrammarExpressionsTerms(parser);
-
-        assertDoesNotThrow(() -> grammar.compileExpression());
-
+        assertDoesNotThrow(grammar::compileExpression);
         assertTrue(parser.isAtEnd());
     }
+
     @Test
     void deveRejeitarExpressaoInvalida() {
-        List<Token> tokens = List.of(
-            new Token(TokenType.IDENTIFIER, "x", 1, 1),
-            new Token(TokenType.SYMBOL, "+", 1, 3)
-        );
+        GrammarExpressionsTerms grammar = grammarOf("x +");
 
-        Parser parser = new Parser(tokens);
-        GrammarExpressionsTerms grammar =
-                new GrammarExpressionsTerms(parser);
+        assertThrows(RuntimeException.class, grammar::compileExpression);
+    }
 
-        assertThrows(
-            RuntimeException.class,
-            () -> grammar.compileExpression()
-        );
+    @Test
+    void deveAceitarExpressaoComParenteses() {
+        GrammarExpressionsTerms grammar = grammarOf("(x + 1) * 2");
+
+        assertDoesNotThrow(grammar::compileExpression);
+        assertTrue(parser.isAtEnd());
+    }
+
+    @Test
+    void deveAceitarOperadorUnario() {
+        GrammarExpressionsTerms grammar = grammarOf("~x");
+
+        assertDoesNotThrow(grammar::compileExpression);
+        assertTrue(parser.isAtEnd());
+    }
+
+    @Test
+    void deveAceitarAcessoAArray() {
+        GrammarExpressionsTerms grammar = grammarOf("a[i + 1]");
+
+        assertDoesNotThrow(grammar::compileExpression);
+        assertTrue(parser.isAtEnd());
+    }
+
+    @Test
+    void deveAceitarChamadaDeSubrotina() {
+        GrammarExpressionsTerms grammar = grammarOf("Math.max(a, 2)");
+
+        assertDoesNotThrow(grammar::compileExpression);
+        assertTrue(parser.isAtEnd());
+    }
+
+    @Test
+    void deveRejeitarTermoInvalido() {
+        GrammarExpressionsTerms grammar = grammarOf(")");
+
+        assertThrows(RuntimeException.class, grammar::compileExpression);
     }
 }

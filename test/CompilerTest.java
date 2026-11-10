@@ -162,4 +162,46 @@ class CompilerTest {
 
         assertEquals(0, countFiles(out.getParent()));
     }
+
+    // ---------- CLI ----------
+
+    @Test
+    void deveCompilarDiretorioIndependentementeEReportarErro()
+            throws IOException {
+        Path good = tmp.resolve("proj/Good.jack");
+        Path bad = tmp.resolve("proj/Bad.jack");
+        Files.createDirectories(good.getParent());
+        Files.writeString(good,
+            "class Good { function void f() { return; } }");
+        Files.writeString(bad, "class Bad { let }");
+        Path out = tmp.resolve("build");
+
+        int code = Compiler.run(new String[] {
+            tmp.resolve("proj").toString(), "-o", out.toString()
+        });
+
+        assertEquals(1, code);
+        assertTrue(Files.exists(out.resolve("GoodP.xml")));
+        assertFalse(Files.exists(out.resolve("BadP.xml")));
+        assertFalse(Files.exists(out.resolve("Bad.vm")));
+    }
+
+    @Test
+    void deveRetornarZeroQuandoTudoCompila() throws IOException {
+        Path jack = tmp.resolve("Main.jack");
+        Files.writeString(jack,
+            "class Main { function void main() { return; } }");
+
+        assertEquals(0, Compiler.run(new String[] { jack.toString() }));
+    }
+
+    @Test
+    void deveRejeitarArgumentosInvalidos() {
+        assertEquals(2, Compiler.run(new String[] {}));
+        assertEquals(2, Compiler.run(new String[] { "a.jack", "b.jack" }));
+        assertEquals(2, Compiler.run(
+            new String[] { tmp.toString(), "-o" }));
+        assertEquals(2, Compiler.run(
+            new String[] { tmp.resolve("nao-existe").toString() }));
+    }
 }

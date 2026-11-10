@@ -33,3 +33,4 @@ target
 .vscode
 bin
 .github
+.mvn

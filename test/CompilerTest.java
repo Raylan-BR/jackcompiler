@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -101,5 +102,64 @@ class CompilerTest {
             out.resolve("Main.vm"),
             Compiler.resolveOutputPath(file, file, out)
         );
+    }
+
+    // ---------- compileFile ----------
+
+    private long countFiles(Path dir) throws IOException {
+        if (!Files.exists(dir)) {
+            return 0;
+        }
+        try (Stream<Path> s = Files.list(dir)) {
+            return s.count();
+        }
+    }
+
+    @Test
+    void deveGerarSaidasParaArquivoValido() throws IOException {
+        Path jack = tmp.resolve("Main.jack");
+        Files.writeString(jack,
+                "class Main { function void main() { return; } }");
+        Path out = tmp.resolve("build").resolve("Main.vm");
+
+        Compiler.compileFile(jack, out);
+
+        assertTrue(Files.exists(out.resolveSibling("MainT.xml")));
+        assertTrue(Files.exists(out.resolveSibling("MainP.xml")));
+        assertEquals(2, countFiles(out.getParent())); // sem temporários
+    }
+
+    @Test
+    void naoDeveDeixarSaidaParaArquivoComErro() throws IOException {
+        Path jack = tmp.resolve("Main.jack");
+        Files.writeString(jack,
+                "class Main { function void main() { return } }");
+        Path out = tmp.resolve("build").resolve("Main.vm");
+
+        assertThrows(
+                RuntimeException.class,
+                () -> Compiler.compileFile(jack, out)
+        );
+
+        assertEquals(0, countFiles(out.getParent()));
+    }
+
+    @Test
+    void deveRemoverSaidaAntigaQuandoNovaCompilacaoFalha()
+            throws IOException {
+        Path jack = tmp.resolve("Main.jack");
+        Path out = tmp.resolve("build").resolve("Main.vm");
+
+        Files.writeString(jack,
+                "class Main { function void main() { return; } }");
+        Compiler.compileFile(jack, out);
+
+        Files.writeString(jack, "class Main {");
+        assertThrows(
+                RuntimeException.class,
+                () -> Compiler.compileFile(jack, out)
+        );
+
+        assertEquals(0, countFiles(out.getParent()));
     }
 }

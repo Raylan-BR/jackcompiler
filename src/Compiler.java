@@ -4,6 +4,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
+import java.nio.file.StandardCopyOption;
+
+import lexer.Lexer;
+import lexer.Token;
+import parser.GrammarDeclarations;
+import parser.Parser;
+import writer.SyntaxXmlWriter;
+import writer.TokenXmlWriter;
+
 // Classe utilitária para compilar arquivos .jack
 public class Compiler {
 
@@ -77,5 +86,68 @@ public class Compiler {
             : outputDir.resolve(relativeDir);
 
         return targetDir.resolve(vmName);
+    }
+    
+    private static String baseName(Path file) {
+        String name = file.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        return dot < 0 ? name : name.substring(0, dot);
+    }
+
+    /**
+     * Compila um .jack de forma independente. Em caso de erro, lança
+     * exceção e não deixa nenhuma saída (nem antiga) para esse arquivo.
+     */
+    static void compileFile(Path jackFile, Path outputFile)
+            throws IOException {
+
+        Path outputDir = outputFile.toAbsolutePath().getParent();
+        String base = baseName(outputFile);
+
+        Path tokenXml = outputDir.resolve(base + "T.xml");
+        Path syntaxXml = outputDir.resolve(base + "P.xml");
+
+        try {
+            String source = Files.readString(jackFile);
+            List<Token> tokens = new Lexer(source).tokenize();
+
+            Files.createDirectories(outputDir);
+
+            Path tmpToken = Files.createTempFile(
+                    outputDir, "jackc-", ".T.tmp");
+            Path tmpSyntax = Files.createTempFile(
+                    outputDir, "jackc-", ".P.tmp");
+
+            try {
+                Files.writeString(
+                        tmpToken, new TokenXmlWriter().write(tokens));
+
+                try (SyntaxXmlWriter writer =
+                             new SyntaxXmlWriter(tmpSyntax)) {
+                    Parser parser = new Parser(tokens, writer);
+                    new GrammarDeclarations(parser, writer)
+                            .compileClass();
+                }
+
+                // TODO(codegen): quanationEngindo o Compile existir,
+                // gerar o .vm aqui em um terceiro arquivo temporário
+                // (via VMWriter) e movê-lo para outputFile abaixo.
+
+                Files.move(tmpToken, tokenXml,
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.move(tmpSyntax, syntaxXml,
+                        StandardCopyOption.REPLACE_EXISTING);
+
+            } finally {
+                Files.deleteIfExists(tmpToken);
+                Files.deleteIfExists(tmpSyntax);
+            }
+
+        } catch (IOException | RuntimeException e) {
+            Files.deleteIfExists(outputFile);
+            Files.deleteIfExists(tokenXml);
+            Files.deleteIfExists(syntaxXml);
+            throw e;
+        }
     }
 }

@@ -1,7 +1,5 @@
 package parser;
 
-import writer.SyntaxXmlWriter;
-
 import java.util.List;
 
 import lexer.Token;
@@ -10,16 +8,9 @@ import lexer.TokenType;
 public class Parser {
 
     private final List<Token> tokens;
-    private final SyntaxXmlWriter xmlWriter;
     private int current = 0;
 
-    // Mantém compatibilidade com o código existente.
     public Parser(List<Token> tokens) {
-        this(tokens, null);
-    }
-
-    // Permite ativar a geração de XML.
-    public Parser(List<Token> tokens, SyntaxXmlWriter xmlWriter) {
         if (tokens == null) {
             throw new IllegalArgumentException(
                 "A lista de tokens não pode ser nula."
@@ -27,7 +18,6 @@ public class Parser {
         }
 
         this.tokens = tokens;
-        this.xmlWriter = xmlWriter;
     }
 
     public boolean isAtEnd() {
@@ -47,16 +37,7 @@ public class Parser {
             return null;
         }
 
-        Token token = tokens.get(current++);
-
-        if (xmlWriter != null) {
-            xmlWriter.writeToken(
-                getXmlTokenType(token),
-                token.getValue()
-            );
-        }
-
-        return token;
+        return tokens.get(current++);
     }
 
     public boolean match(TokenType type) {
@@ -88,30 +69,5 @@ public class Parser {
                 + ": esperado " + type
                 + ", mas encontrado '" + token.getValue() + "'."
         );
-    }
-
-    private String getXmlTokenType(Token token) {
-        switch (token.getType()) {
-            case KEYWORD:
-                return "keyword";
-
-            case SYMBOL:
-                return "symbol";
-
-            case IDENTIFIER:
-                return "identifier";
-
-            case INTEGER_CONSTANT:
-                return "integerConstant";
-
-            case STRING_CONSTANT:
-                return "stringConstant";
-
-            default:
-                throw new IllegalArgumentException(
-                    "Tipo de token desconhecido: "
-                        + token.getType()
-                );
-        }
     }
 }

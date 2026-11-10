@@ -1,26 +1,23 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import java.nio.file.StandardCopyOption;
 
 import lexer.Lexer;
 import lexer.Token;
 import parser.GrammarDeclarations;
 import parser.Parser;
-import writer.SyntaxXmlWriter;
-import writer.TokenXmlWriter;
+import codegen.SymbolTable;
+import codegen.VMWriter;
 
-// Classe utilitária para compilar arquivos .jack
+// Classe utilitária para compilar arquivos .jack em arquivos .vm
 public class Compiler {
 
-    // Procura arquivo .jack
     private static final String JACK_EXTENSION = ".jack";
 
-    // Verifica se o arquivo tem extensão .jack
     static boolean isJackFile(Path path) {
         return path.getFileName().toString()
             .toLowerCase()
@@ -28,8 +25,7 @@ public class Compiler {
     }
 
     /**
-     * Retorna os .jack da entrada (arquivo único ou diretório,
-     * recursivamente)
+     * Retorna os arquivos .jack da entrada (arquivo único ou diretório recursivamente).
      */
     static List<Path> collectJackFiles(Path input) throws IOException {
         if (Files.isRegularFile(input)) {
@@ -56,16 +52,10 @@ public class Compiler {
         );
     }
 
-        /**
+    /**
      * Calcula o caminho do .vm correspondente a um .jack.
-     * Espera caminhos absolutos e normalizados.
-     *
-     * - Sem outputDir: o .vm fica ao lado do .jack.
-     * - Com outputDir: subpastas relativas à entrada são preservadas.
-     *   Para entrada de arquivo único, o .vm vai direto em outputDir.
      */
-    static Path resolveOutputPath(
-            Path input, Path jackFile, Path outputDir) {
+    static Path resolveOutputPath(Path input, Path jackFile, Path outputDir) {
 
         String name = jackFile.getFileName().toString();
         String vmName = name.substring(
@@ -88,74 +78,47 @@ public class Compiler {
 
         return targetDir.resolve(vmName);
     }
-    
-    private static String baseName(Path file) {
-        String name = file.getFileName().toString();
-        int dot = name.lastIndexOf('.');
-        return dot < 0 ? name : name.substring(0, dot);
-    }
 
     /**
-     * Compila um .jack de forma independente. Em caso de erro, lança
-     * exceção e não deixa nenhuma saída (nem antiga) para esse arquivo.
+     * Compila um arquivo .jack gerando o arquivo .vm final de forma atômica.
      */
-    static void compileFile(Path jackFile, Path outputFile)
-            throws IOException {
+    static void compileFile(Path jackFile, Path outputFile) throws IOException {
 
         Path outputDir = outputFile.toAbsolutePath().getParent();
-        String base = baseName(outputFile);
+        Files.createDirectories(outputDir);
 
-        Path tokenXml = outputDir.resolve(base + "T.xml");
-        Path syntaxXml = outputDir.resolve(base + "P.xml");
+        // Cria arquivo temporário .vm no diretório de destino
+        Path tmpVm = Files.createTempFile(outputDir, "jackc-", ".vm.tmp");
 
         try {
+            // 1. Análise Léxica
             String source = Files.readString(jackFile);
             List<Token> tokens = new Lexer(source).tokenize();
 
-            Files.createDirectories(outputDir);
+            // 2. Instanciação do Pipeline
+            Parser parser = new Parser(tokens);
+            SymbolTable symbolTable = new SymbolTable();
+            VMWriter vmWriter = new VMWriter(tmpVm.toFile());
 
-            Path tmpToken = Files.createTempFile(
-                    outputDir, "jackc-", ".T.tmp");
-            Path tmpSyntax = Files.createTempFile(
-                    outputDir, "jackc-", ".P.tmp");
+            // 3. Compilação e Geração de Código VM
+            GrammarDeclarations compilationEngine =
+                    new GrammarDeclarations(parser, symbolTable, vmWriter);
 
-            try {
-                Files.writeString(
-                        tmpToken, new TokenXmlWriter().write(tokens));
+            compilationEngine.compileClass();
 
-                try (SyntaxXmlWriter writer =
-                             new SyntaxXmlWriter(tmpSyntax)) {
-                    Parser parser = new Parser(tokens, writer);
-                    new GrammarDeclarations(parser, writer)
-                            .compileClass();
-                }
-
-                // TODO(codegen): quanationEngindo o Compile existir,
-                // gerar o .vm aqui em um terceiro arquivo temporário
-                // (via VMWriter) e movê-lo para outputFile abaixo.
-
-                Files.move(tmpToken, tokenXml,
-                        StandardCopyOption.REPLACE_EXISTING);
-                Files.move(tmpSyntax, syntaxXml,
-                        StandardCopyOption.REPLACE_EXISTING);
-
-            } finally {
-                Files.deleteIfExists(tmpToken);
-                Files.deleteIfExists(tmpSyntax);
-            }
+            // 4. Substituição atômica pelo arquivo .vm final
+            Files.move(tmpVm, outputFile, StandardCopyOption.REPLACE_EXISTING);
 
         } catch (IOException | RuntimeException e) {
             Files.deleteIfExists(outputFile);
-            Files.deleteIfExists(tokenXml);
-            Files.deleteIfExists(syntaxXml);
             throw e;
+        } finally {
+            Files.deleteIfExists(tmpVm);
         }
     }
 
-    // Classe para armazenar as opções de entrada e saída do compilador
     record Options(Path input, Path outputDir) { }
 
-    // Analisa os argumentos da linha de comando e retorna as opções correspondentes.
     static Options parseArgs(String[] args) {
         Path input = null;
         Path outputDir = null;
@@ -189,13 +152,11 @@ public class Compiler {
         }
 
         if (input == null) {
-            throw new IllegalArgumentException(
-                "Nenhuma entrada informada.");
+            throw new IllegalArgumentException("Nenhuma entrada informada.");
         }
 
         if (!Files.exists(input)) {
-            throw new IllegalArgumentException(
-                "Caminho não encontrado: " + input);
+            throw new IllegalArgumentException("Caminho não encontrado: " + input);
         }
 
         if (outputDir != null
@@ -208,14 +169,11 @@ public class Compiler {
         return new Options(input, outputDir);
     }
 
-    // Imprime a mensagem de uso do compilador.
     private static void printUsage() {
         System.err.println(
             "Uso: java Compiler <arquivo.jack | diretório> [-o <diretório-de-saída>]");
     }
 
-    /** Executa o compilador e retorna o código de saída (0, 1 ou 2). */
-    // 0: sucesso, 1: erro de compilação, 2: erro de uso
     static int run(String[] args) {
         Options options;
 
@@ -238,8 +196,7 @@ public class Compiler {
 
         if (files.isEmpty()) {
             System.err.println(
-                "Erro: nenhum arquivo .jack encontrado em "
-                    + options.input());
+                "Erro: nenhum arquivo .jack encontrado em " + options.input());
             return 1;
         }
 
@@ -253,11 +210,10 @@ public class Compiler {
             try {
                 compileFile(file, output);
                 compiled++;
-                System.out.println("[OK]   " + file);
+                System.out.println("[OK]   " + file + " -> " + output.getFileName());
             } catch (IOException | RuntimeException e) {
                 failed.add(file);
-                System.err.println(
-                    "[ERRO] " + file + ": " + e.getMessage());
+                System.err.println("[ERRO] " + file + ": " + e.getMessage());
             }
         }
 
@@ -268,7 +224,6 @@ public class Compiler {
         return failed.isEmpty() ? 0 : 1;
     }
 
-    // Ponto de entrada do compilador. Chama run() e encerra o programa com o código de saída apropriado.
     public static void main(String[] args) {
         System.exit(run(args));
     }

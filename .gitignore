@@ -35,3 +35,4 @@ bin
 .github
 .mvn
 .idea
+*.vm

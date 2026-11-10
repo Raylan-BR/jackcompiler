@@ -45,4 +45,37 @@ public class Compiler {
             "Caminho não encontrado: " + input
         );
     }
+
+        /**
+     * Calcula o caminho do .vm correspondente a um .jack.
+     * Espera caminhos absolutos e normalizados.
+     *
+     * - Sem outputDir: o .vm fica ao lado do .jack.
+     * - Com outputDir: subpastas relativas à entrada são preservadas.
+     *   Para entrada de arquivo único, o .vm vai direto em outputDir.
+     */
+    static Path resolveOutputPath(
+            Path input, Path jackFile, Path outputDir) {
+
+        String name = jackFile.getFileName().toString();
+        String vmName = name.substring(
+            0, name.length() - JACK_EXTENSION.length()
+        ) + ".vm";
+
+        if (outputDir == null) {
+            return jackFile.resolveSibling(vmName);
+        }
+
+        Path root = Files.isDirectory(input)
+            ? input
+            : input.getParent();
+
+        Path relativeDir = root.relativize(jackFile).getParent();
+
+        Path targetDir = relativeDir == null
+            ? outputDir
+            : outputDir.resolve(relativeDir);
+
+        return targetDir.resolve(vmName);
+    }
 }

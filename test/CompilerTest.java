@@ -67,4 +67,39 @@ class CompilerTest {
             () -> Compiler.collectJackFiles(tmp.resolve("nao-existe"))
         );
     }
+
+        // ---------- resolveOutputPath ----------
+
+    @Test
+    void deveGerarVmAoLadoDoJackSemDiretorioDeSaida() throws IOException {
+        Path file = create("Main.jack");
+
+        assertEquals(
+            tmp.resolve("Main.vm"),
+            Compiler.resolveOutputPath(file, file, null)
+        );
+    }
+
+    @Test
+    void devePreservarSubpastasNoDiretorioDeSaida() throws IOException {
+        Path file = create("sub/deep/Game.jack");
+        Path out = tmp.resolve("build");
+
+        assertEquals(
+            out.resolve("sub").resolve("deep").resolve("Game.vm"),
+            Compiler.resolveOutputPath(tmp, file, out)
+        );
+    }
+
+    @Test
+    void deveColocarArquivoUnicoDiretamenteNoDiretorioDeSaida()
+            throws IOException {
+        Path file = create("proj/Main.jack");
+        Path out = tmp.resolve("build");
+
+        assertEquals(
+            out.resolve("Main.vm"),
+            Compiler.resolveOutputPath(file, file, out)
+        );
+    }
 }

@@ -1,4 +1,12 @@
 import java.util.List;
+
+import lexer.Lexer;
+import lexer.Token;
+import parser.GrammarDeclarations;
+import parser.Parser;
+import writer.SyntaxXmlWriter;
+import writer.TokenXmlWriter;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;

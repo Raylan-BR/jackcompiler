@@ -1,3 +1,4 @@
+package lexer;
 // O Token representa uma unidade léxica do código, contendo seu tipo e valor.
 
 public class Token {

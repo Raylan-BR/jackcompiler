@@ -1,4 +1,9 @@
+package parser;
 import java.util.List;
+
+import lexer.Token;
+import lexer.TokenType;
+import writer.SyntaxXmlWriter;
 
 public class GrammarStatements {
 

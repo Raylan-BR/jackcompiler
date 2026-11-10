@@ -2,6 +2,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import lexer.Lexer;
+import parser.GrammarStatements;
+
 class GrammarStatementsTest {
 
     private static GrammarStatements grammarOf(String code) {

@@ -1,4 +1,10 @@
 import org.junit.jupiter.api.Test;
+
+import lexer.Token;
+import lexer.TokenType;
+import parser.GrammarExpressionsTerms;
+import parser.Parser;
+
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 

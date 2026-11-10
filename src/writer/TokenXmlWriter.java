@@ -1,4 +1,8 @@
+package writer;
 import java.util.List;
+
+import lexer.Token;
+import lexer.TokenType;
 
 public class TokenXmlWriter {
 

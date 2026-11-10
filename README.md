@@ -25,7 +25,7 @@ Na geração das saídas, os arquivos serão salvos em um diretório chamado `ac
 1. Abra a pasta do projeto no VS Code.
 2. Na raiz do projeto compile o projeto com:
 ```bash
-javac -d target/classes $(find src -name "*.java")
+javac -d target/classes src/Main.java src/*/*.java
 ```
 3. Para executar a análise léxica e sintática sob um arquivo oficial:
 ```bash
@@ -37,7 +37,7 @@ java -cp target/classes Main test/fixtures/ArrayTest/Main.jack
 1. Abra a pasta do projeto no VS Code.
 2. Na raiz do projeto compile o projeto com:
 ```bash
-javac -d target/classes (Get-ChildItem -Path src -Filter *.java -Recurse | Select-Object -ExpandProperty FullName)
+javac -d target/classes src/Main.java src/lexer/*.java src/parser/*.java src/codegen/*.java src/writer/*.java
 ```
 3. Para executar a análise léxica e sintática utilize o mesmo passo **3** de **5.1**
 

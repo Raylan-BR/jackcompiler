@@ -4,6 +4,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import lexer.Token;
+import lexer.TokenType;
+import parser.GrammarDeclarations;
+import parser.Parser;
+
 public class GrammarDeclarationsTest {
 
     private Token token(TokenType type, String value) {

@@ -1,3 +1,8 @@
+package parser;
+import lexer.Token;
+import lexer.TokenType;
+import writer.SyntaxXmlWriter;
+
 public class GrammarDeclarations {
 
     private final Parser parser;

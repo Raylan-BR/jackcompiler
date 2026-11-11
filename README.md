@@ -1,4 +1,4 @@
-# Geração de código VM
+# Geração de código VM ``etapa1``
 
 ## 1. Integrantes
 
@@ -18,9 +18,53 @@ O nosso projeto é estruturado em diretórios intuitivos. O `src` é formado pel
 
 O `test` é o diretório onde ficam os programas para validação de acordo com o padrão Nand2Tetris.
 
-## 5. Como compilar e executar
+O projeto está organizado em diretórios intuitivos, separando o código-fonte, os testes e os artefatos de build:
 
-### 5.1. No Linux
+```bash
+jack-compiler/
+├── src/
+│ ├── Compiler.java # Ponto de entrada do compilador
+│ ├── codegen/
+│ │ ├── SymbolTable.java # Tabela de símbolos (escopos e tipos)
+│ │ └── VMWriter.java # Escritor de instruções VM (.vm)
+│ ├── lexer/
+│ │ ├── JackKeywords.java # Conjunto de palavras-chave da linguagem
+│ │ ├── JackSymbols.java # Conjunto de símbolos válidos
+│ │ ├── Lexer.java # Analisador léxico
+│ │ ├── Token.java # Representação de um token
+│ │ └── TokenType.java # Enumeração dos tipos de token
+│ └── parser/
+│ ├── GrammarDeclarations.java # Regras de declarações (classes, subrotinas)
+│ ├── GrammarExpressionsTerms.java # Regras de expressões e termos
+│ ├── GrammarStatements.java # Regras de comandos (let, if, while, do, return)
+│ └── Parser.java # Núcleo do analisador sintático
+├── test/
+│ ├── CompilerTest.java # Testes da classe principal
+│ ├── codegen/
+│ │ ├── SymbolTableTest.java # Testes da tabela de símbolos
+│ │ └── VMWriterTest.java # Testes do gerador de código VM
+│ ├── lexer/
+│ │ ├── LexerTest.java # Testes da análise léxica
+│ │ └── TokenTest.java # Testes da classe Token
+│ ├── parser/
+│ │ ├── ParserTest.java
+│ │ ├── GrammarDeclarationsTest.java
+│ │ ├── GrammarExpressionsTermsTest.java
+│ │ └── GrammarStatementsTest.java
+│ ├── Average/ # Programas Jack oficiais do Nand2Tetris
+│ ├── ComplexArrays/
+│ ├── ConvertToBin/
+│ ├── Pong/
+│ ├── Seven/
+│ └── Square/
+├── pom.xml # Configuração do Maven
+├── mvnw / mvnw.cmd # Maven Wrapper
+└── README.md
+```
+
+## 4. Como compilar e executar
+
+### 4.1. No Linux
 1. Abra a pasta do projeto no VS Code.
 2. Na raiz do projeto compile o projeto com:
 ```bash
@@ -32,7 +76,7 @@ java -cp target/classes Compiler test/Seven/Main.jack
 ```
 (Nesse caso especificamos um arquivo jack, mas a geração de código vm pode ser feita sob um diretório com vários arquivos jack).
 
-### 5.2. No Windows
+### 4.2. No Windows
 1. Abra a pasta do projeto no VS Code.
 2. Na raiz do projeto compile o projeto com:
 ```bash
@@ -43,7 +87,7 @@ javac -d target/classes src/Compiler.java src/lexer/*.java src/parser/*.java src
 Para validar os arquivos gerados, utilizamos o site a seguir:
 [VM EMULATOR WEB](https://nand2tetris.github.io/web-ide/vm).
 
-## 6 Utilização da IA no desenvolvimento
+## 5 Utilização da IA no desenvolvimento
 
 Utilizamos os chats web de IA: ChatGPT e Gemini nas etapas de análise léxica, sintática e geração de código VM. Ao longo de cada etapa, criamos sprints de desenvolvimento na plataforma jira dividindo as tasks entre a dupla.
 
@@ -52,24 +96,3 @@ Na primeira etapa utilizamos a IA como apoio durante o desenvolvimento do analis
 Na segunda etapa compreendemos e implementamos métodos auxiliares para navegação e validação dos tokens. Também recebemos orientações sobre a integração entre o Lexer e o Parser e sobre a criação de testes utilizando arquivos .jack para verificar o funcionamento dos métodos.
 
 Na terceira etapa ela nos auxiliou na definição da estrutura de classes e métodos (VMWriter, SymbolTable e CompilationEngine), identificação de testes unitários e de integração. Também nos ajudou a compreender os requisitos de geração de código VM e compilação por diretórios. A implementação, integração, revisão e validação do código foram realizadas sob nossa responsabilidade, com participação ativa dos dois integrantes.
-
-## 7 Testes com JUnit
-
-Pré-requisito: JDK 17 ou superior instalado (`java -version` para conferir).
-
-```bash
-# Linux/Mac
-./mvnw test
-
-# Windows
-.\mvnw.cmd test
-```
-
-Se aparecer erro de `JAVA_HOME`, defina a variável apontando para a pasta do seu JDK.
-A primeira execução baixa o Maven e as dependências, então precisa de internet.
-
-```bash
-# Exemplo
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.10"
-```
-

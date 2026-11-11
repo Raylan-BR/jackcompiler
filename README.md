@@ -5,6 +5,8 @@
 - **Raylan Bruno Santana Carvalho** — Matrícula: `20260001132`
 - **Kauan Guilherme Alves Pinheiro Santos** — Matrícula: `20260001160`
 
+Link do Vídeo: [Clique aqui](https://drive.google.com/file/d/1PgEkhg0WljcQF1_mrMn8MJm5hHd-enjY/view?usp=sharing).
+
 ## 2. Linguagem de programação
 
 O projeto foi desenvolvido em **Java**, com o objetivo de implementar um analisador léxico, sintático e o gerador de código de máquina para a linguagem Jack, utilizada no projeto de compilador Nand2Tetris.

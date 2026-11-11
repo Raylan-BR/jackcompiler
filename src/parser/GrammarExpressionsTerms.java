@@ -12,6 +12,7 @@ public class GrammarExpressionsTerms {
     private final Parser parser;
     private final SymbolTable symbolTable;
     private final VMWriter vmWriter;
+    private String currentClassName;
 
     public GrammarExpressionsTerms(Parser parser, SymbolTable symbolTable, VMWriter vmWriter) {
         if (parser == null || symbolTable == null || vmWriter == null) {
@@ -150,6 +151,11 @@ public class GrammarExpressionsTerms {
     /**
      * Compila chamadas de subrotina no formato: 'metodo(arg)' ou 'Objeto.metodo(arg)'
      */
+
+    public void setCurrentClassName(String currentClassName) {
+        this.currentClassName = currentClassName;
+    }
+
     private void compileSubroutineCall(String firstName) {
         String subroutineName = firstName;
         int nArgs = 0;
@@ -163,17 +169,16 @@ public class GrammarExpressionsTerms {
             SymbolTable.Kind kind = symbolTable.kindOf(objectOrClass);
 
             if (kind != SymbolTable.Kind.NONE) {
-                // É um método chamado sobre uma instância de objeto (ex: game.run())
                 vmWriter.writePush(convertKindToSegment(kind), symbolTable.indexOf(objectOrClass));
                 subroutineName = symbolTable.typeOf(objectOrClass) + "." + methodName;
-                nArgs = 1; // O próprio objeto é passado como primeiro argumento (this)
+                nArgs = 1;
             } else {
-                // É uma função estática ou construtor (ex: Memory.peek(100))
                 subroutineName = objectOrClass + "." + methodName;
             }
         } else {
-            // Método da própria classe atual (ex: redraw())
-            vmWriter.writePush(Segment.POINTER, 0); // Passa 'this' como argumento 0
+            // Chamada de método da própria classe atual
+            vmWriter.writePush(Segment.POINTER, 0);
+            subroutineName = currentClassName + "." + firstName; // <-- ATUALIZADO
             nArgs = 1;
         }
 

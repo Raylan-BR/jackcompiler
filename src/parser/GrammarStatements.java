@@ -14,6 +14,7 @@ public class GrammarStatements {
     private final VMWriter vmWriter;
     private final GrammarExpressionsTerms expressions;
     private int labelIndex = 0; // Contador para gerar rótulos únicos (IF_TRUE0, IF_FALSE0, WHILE_EXP0, etc.)
+    private String currentClassName;
 
     public GrammarStatements(Parser parser, SymbolTable symbolTable, VMWriter vmWriter) {
         if (parser == null || symbolTable == null || vmWriter == null) {
@@ -204,6 +205,11 @@ public class GrammarStatements {
         vmWriter.writeReturn();
     }
 
+    public void setCurrentClassName(String currentClassName) {
+        this.currentClassName = currentClassName;
+        this.expressions.setCurrentClassName(currentClassName);
+    }
+
     private void compileSubroutineCall(String firstName) {
         String subroutineName = firstName;
         int nArgs = 0;
@@ -217,17 +223,16 @@ public class GrammarStatements {
             SymbolTable.Kind kind = symbolTable.kindOf(objectOrClass);
 
             if (kind != SymbolTable.Kind.NONE) {
-                // Chamada de método em uma instância (ex: game.run())
                 vmWriter.writePush(convertKindToSegment(kind), symbolTable.indexOf(objectOrClass));
                 subroutineName = symbolTable.typeOf(objectOrClass) + "." + methodName;
-                nArgs = 1; // O objeto é passado como 'this' no ARG 0
+                nArgs = 1;
             } else {
-                // Chamada de função estática ou construtor (ex: Output.printInt(x))
                 subroutineName = objectOrClass + "." + methodName;
             }
         } else {
             // Chamada de método da própria classe
             vmWriter.writePush(Segment.POINTER, 0);
+            subroutineName = currentClassName + "." + firstName; // <-- ATUALIZADO
             nArgs = 1;
         }
 

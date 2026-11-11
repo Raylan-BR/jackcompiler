@@ -26,20 +26,21 @@ public class GrammarDeclarations {
         consumeKeyword("class");
         Token classToken = consume(TokenType.IDENTIFIER);
         this.currentClassName = classToken.getValue();
+        
+        statements.setCurrentClassName(currentClassName);
+
         consumeSymbol("{");
 
-        // 1. Preenche variáveis de classe (STATIC e FIELD) na SymbolTable
         while (checkKeyword("static") || checkKeyword("field")) {
             compileClassVarDec();
         }
 
-        // 2. Compila subrotinas (métodos, funções, construtores)
         while (checkKeyword("constructor") || checkKeyword("function") || checkKeyword("method")) {
             compileSubroutine();
         }
 
         consumeSymbol("}");
-        vmWriter.close(); // Garante a gravação do arquivo .vm ao término
+        vmWriter.close();
     }
 
     public void compileClassVarDec() {
